@@ -35,9 +35,14 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MP3FileNameParser.h MP3FileNameParser.cpp
         MP3FileOperations.h MP3FileOperations.cpp
         MP3FileFinder.h MP3FileFinder.cpp
-        CSVParser.h CSVParser.cpp
-        CSVWriter.h CSVWriter.cpp
-        CSVReader.h CSVReader.cpp
+        TXTParser.h TXTParser.cpp
+        TXTWriter.h TXTWriter.cpp
+        TXTReader.h TXTReader.cpp
+        MusicCatalogException.h MusicCatalogException.cpp
+        FileException.h FileException.cpp
+        TrackException.h TrackException.cpp
+        ValidationException.h ValidationException.cpp
+        ParseException.h ParseException.cpp
         GenreManager.h GenreManager.cpp
         ReportGenerator.h ReportGenerator.cpp
         AuthenticationService.h AuthenticationService.cpp

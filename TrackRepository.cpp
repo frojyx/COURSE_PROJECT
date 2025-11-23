@@ -1,5 +1,7 @@
 // TrackRepository.cpp
 #include "TrackRepository.h"
+#include "TrackException.h"
+#include "ValidationException.h"
 
 TrackRepository::TrackRepository() : nextId(1) {}
 
@@ -11,12 +13,24 @@ void TrackRepository::addTrack(const Track& track) {
 
 void TrackRepository::addTrack(const QString& title, const QString& artist,
                                 const QString& album, int year, const QString& genre, int duration) {
+    if (title.isEmpty()) {
+        throw ValidationException("title", "название трека не может быть пустым");
+    }
+    if (artist.isEmpty()) {
+        throw ValidationException("artist", "исполнитель не может быть пустым");
+    }
     Track track(nextId++, title, artist, album, year, genre, duration);
     tracks.append(track);
 }
 
 void TrackRepository::addTrack(const QString& title, const QString& artist,
                                 const QString& album, int year, const QString& genre, int duration, const QString& filePath) {
+    if (title.isEmpty()) {
+        throw ValidationException("title", "название трека не может быть пустым");
+    }
+    if (artist.isEmpty()) {
+        throw ValidationException("artist", "исполнитель не может быть пустым");
+    }
     Track track(nextId++, title, artist, album, year, genre, duration, filePath);
     tracks.append(track);
 }
@@ -37,10 +51,18 @@ bool TrackRepository::removeTrack(int id) {
             return true;
         }
     }
+    // Возвращаем false, если трек не найден (для обратной совместимости)
     return false;
 }
 
 bool TrackRepository::updateTrack(int id, const Track& updatedTrack) {
+    if (updatedTrack.getTitle().isEmpty()) {
+        throw ValidationException("title", "название трека не может быть пустым");
+    }
+    if (updatedTrack.getArtist().isEmpty()) {
+        throw ValidationException("artist", "исполнитель не может быть пустым");
+    }
+    
     for (int i = 0; i < tracks.size(); ++i) {
         if (tracks[i].getId() == id) {
             tracks[i] = updatedTrack;
@@ -48,6 +70,7 @@ bool TrackRepository::updateTrack(int id, const Track& updatedTrack) {
             return true;
         }
     }
+    // Возвращаем false, если трек не найден (для обратной совместимости)
     return false;
 }
 

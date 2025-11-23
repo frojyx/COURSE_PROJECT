@@ -235,9 +235,9 @@ void MainWindow::updateSelectedTrack() {
 }
 
 void MainWindow::saveCatalog() {
-    QString fileName = QFileDialog::getSaveFileName(this, "Сохранить каталог", "music_catalog.csv", "CSV Files (*.csv)");
+    QString fileName = QFileDialog::getSaveFileName(this, "Сохранить каталог", "music_catalog.txt", "TXT Files (*.txt)");
     if (!fileName.isEmpty()) {
-        if (FileManager::saveToCSV(catalog, fileName)) {
+        if (FileManager::saveToTXT(catalog, fileName)) {
             QMessageBox::information(this, "Успех", "Каталог сохранен");
             autoSaveCatalog(); // Также сохраняем в автосохранение
         } else {
@@ -247,9 +247,9 @@ void MainWindow::saveCatalog() {
 }
 
 void MainWindow::loadCatalog() {
-    QString fileName = QFileDialog::getOpenFileName(this, "Загрузить каталог", "", "CSV Files (*.csv)");
+    QString fileName = QFileDialog::getOpenFileName(this, "Загрузить каталог", "", "TXT Files (*.txt)");
     if (!fileName.isEmpty()) {
-        if (FileManager::loadFromCSV(catalog, fileName)) {
+        if (FileManager::loadFromTXT(catalog, fileName)) {
             QMessageBox::information(this, "Успех", "Каталог загружен");
             updateTrackTable();
             autoSaveCatalog(); // Сохраняем в автосохранение
@@ -260,14 +260,14 @@ void MainWindow::loadCatalog() {
 }
 
 void MainWindow::autoSaveCatalog() {
-    QString fileName = "catalog_autosave.csv";
-    FileManager::saveToCSV(catalog, fileName);
+    QString fileName = "catalog_autosave.txt";
+    FileManager::saveToTXT(catalog, fileName);
 }
 
 void MainWindow::autoLoadCatalog() {
-    QString fileName = "catalog_autosave.csv";
+    QString fileName = "catalog_autosave.txt";
     if (QFile::exists(fileName)) {
-        FileManager::loadFromCSV(catalog, fileName);
+        FileManager::loadFromTXT(catalog, fileName);
     }
 }
 
