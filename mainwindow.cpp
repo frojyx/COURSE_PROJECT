@@ -11,9 +11,11 @@
 #include <QFileInfo>
 #include <QColor>
 #include <QSet>
+#include <QDesktopServices>
+#include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), currentTrackId(-1), searchResultsWindow(nullptr)
+    : QMainWindow(parent), currentTrackId(-1), yandexIntegrator(nullptr), yandexSearchDialog(nullptr)
 {
     setWindowTitle("Музыкальный каталог");
     setMinimumSize(1000, 700);
@@ -21,11 +23,18 @@ MainWindow::MainWindow(QWidget *parent)
     stackedWidget = new QStackedWidget(this);
     setCentralWidget(stackedWidget);
 
+    // Инициализируем интегратор Яндекс Музыки
+    yandexIntegrator = new YandexMusicIntegrator(&catalog, this);
+    connect(yandexIntegrator, &YandexMusicIntegrator::tracksFound,
+            this, &MainWindow::onYandexTracksFound);
+    connect(yandexIntegrator, &YandexMusicIntegrator::trackImported,
+            this, &MainWindow::onYandexTrackImported);
+    connect(yandexIntegrator, &YandexMusicIntegrator::errorOccurred,
+            this, &MainWindow::onYandexError);
+
     // Создаем экраны
     stackedWidget->addWidget(createMainCatalogScreen());
     stackedWidget->addWidget(createAddTrackScreen());
-    stackedWidget->addWidget(createSearchScreen());
-    stackedWidget->addWidget(createTrackDetailsScreen());
     stackedWidget->addWidget(createEditTrackScreen());
 
     // Автозагрузка каталога при запуске
@@ -43,14 +52,6 @@ void MainWindow::showMainCatalog() {
 void MainWindow::showAddTrack() {
     clearAddTrackForm();
     stackedWidget->setCurrentIndex(1);
-}
-
-void MainWindow::showSearchFilters() {
-    stackedWidget->setCurrentIndex(2);
-}
-
-void MainWindow::showTrackDetails(int row) {
-    stackedWidget->setCurrentIndex(3);
 }
 
 void MainWindow::addNewTrack() {
@@ -147,112 +148,6 @@ void MainWindow::searchTracks() {
     }
 }
 
-void MainWindow::generateReport() {
-    QString report = ReportGenerator::generateReport(catalog);
-
-    QString fileName = QFileDialog::getSaveFileName(this, "Сохранить отчет", "", "Text Files (*.txt)");
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            QTextStream stream(&file);
-            stream << report;
-            file.close();
-            QMessageBox::information(this, "Успех", "Отчет сохранен");
-        }
-    }
-}
-
-void MainWindow::deleteSelectedTrack() {
-    int currentRow = trackTable->currentRow();
-    if (currentRow == -1) {
-        QMessageBox::warning(this, "Ошибка", "Выберите трек для удаления");
-        return;
-    }
-
-    QTableWidgetItem *item = trackTable->item(currentRow, 0);
-    if (!item) {
-        QMessageBox::warning(this, "Ошибка", "Трек не найден");
-        return;
-    }
-    int trackId = item->data(Qt::UserRole).toInt();
-
-    QMessageBox::StandardButton reply = QMessageBox::question(this, "Подтверждение",
-                                                              "Вы уверены, что хотите удалить этот трек?",
-                                                              QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes) {
-        if (catalog.removeTrack(trackId)) {
-            QMessageBox::information(this, "Успех", "Трек удален");
-            updateTrackTable();
-            autoSaveCatalog();
-        } else {
-            QMessageBox::warning(this, "Ошибка", "Не удалось удалить трек");
-        }
-    }
-}
-
-void MainWindow::updateSelectedTrack() {
-    int currentRow = trackTable->currentRow();
-    if (currentRow == -1) {
-        QMessageBox::warning(this, "Ошибка", "Выберите трек для редактирования");
-        return;
-    }
-
-    QTableWidgetItem *item = trackTable->item(currentRow, 0);
-    if (!item) {
-        QMessageBox::warning(this, "Ошибка", "Трек не найден");
-        return;
-    }
-    int trackId = item->data(Qt::UserRole).toInt();
-    Track* track = catalog.findTrackById(trackId);
-
-    if (track) {
-        // Заполняем форму редактирования данными трека
-        editTitleEdit->setText(track->getTitle());
-        editArtistEdit->setText(track->getArtist());
-        editAlbumEdit->setText(track->getAlbum());
-        editYearEdit->setValue(track->getYear());
-        // Пытаемся найти жанр в списке
-        int index = editGenreEdit->findText(track->getGenre(), Qt::MatchExactly);
-        if (index >= 0) {
-            editGenreEdit->setCurrentIndex(index);
-        } else {
-            // Если жанр не найден в списке, устанавливаем пустой элемент
-            editGenreEdit->setCurrentIndex(0);
-        }
-        editDurationEdit->setValue(track->getDuration());
-
-    currentTrackId = trackId;
-    stackedWidget->setCurrentIndex(4); // Экран редактирования
-    } else {
-        QMessageBox::warning(this, "Ошибка", "Трек не найден");
-    }
-}
-
-void MainWindow::saveCatalog() {
-    QString fileName = QFileDialog::getSaveFileName(this, "Сохранить каталог", "music_catalog.txt", "TXT Files (*.txt)");
-    if (!fileName.isEmpty()) {
-        if (FileManager::saveToTXT(catalog, fileName)) {
-            QMessageBox::information(this, "Успех", "Каталог сохранен");
-            autoSaveCatalog(); // Также сохраняем в автосохранение
-        } else {
-            QMessageBox::warning(this, "Ошибка", "Не удалось сохранить каталог");
-        }
-    }
-}
-
-void MainWindow::loadCatalog() {
-    QString fileName = QFileDialog::getOpenFileName(this, "Загрузить каталог", "", "TXT Files (*.txt)");
-    if (!fileName.isEmpty()) {
-        if (FileManager::loadFromTXT(catalog, fileName)) {
-            QMessageBox::information(this, "Успех", "Каталог загружен");
-            updateTrackTable();
-            autoSaveCatalog(); // Сохраняем в автосохранение
-        } else {
-            QMessageBox::warning(this, "Ошибка", "Не удалось загрузить каталог");
-        }
-    }
-}
 
 void MainWindow::autoSaveCatalog() {
     QString fileName = "catalog_autosave.txt";
@@ -358,66 +253,38 @@ void MainWindow::openTrackFile(int row, int column) {
     int trackId = item->data(Qt::UserRole).toInt();
     Track* track = catalog.findTrackById(trackId);
 
-    if (track && !track->getFilePath().isEmpty()) {
-        MP3FileManager::openMP3File(track->getFilePath());
-    } else if (track) {
+    if (!track) return;
+    
+    QString filePath = track->getFilePath();
+    
+    // Проверяем, является ли путь ссылкой на Яндекс Музыку
+    if (!filePath.isEmpty() && (filePath.startsWith("https://music.yandex.ru/") || 
+                                filePath.startsWith("http://music.yandex.ru/"))) {
+        // Открываем ссылку в браузере
+        QDesktopServices::openUrl(QUrl(filePath));
+        return;
+    }
+    
+    // Обычный локальный файл
+    if (!filePath.isEmpty()) {
+        MP3FileManager::openMP3File(filePath);
+    } else {
         // Если путь не сохранен, пытаемся найти файл
-        QString filePath = mp3Manager.findFileByTrack(track->getId(),
-                                                      track->getTitle(),
-                                                      track->getArtist(),
-                                                      track->getAlbum(),
-                                                      track->getYear(),
-                                                      track->getGenre(),
-                                                      track->getDuration());
-        if (!filePath.isEmpty()) {
-            MP3FileManager::openMP3File(filePath);
+        QString foundPath = mp3Manager.findFileByTrack(track->getId(),
+                                                       track->getTitle(),
+                                                       track->getArtist(),
+                                                       track->getAlbum(),
+                                                       track->getYear(),
+                                                       track->getGenre(),
+                                                       track->getDuration());
+        if (!foundPath.isEmpty()) {
+            MP3FileManager::openMP3File(foundPath);
         } else {
             QMessageBox::warning(this, "Ошибка", "Файл не найден");
         }
     }
 }
 
-void MainWindow::playTrack(int row) {
-    if (row < 0 || row >= trackTable->rowCount()) return;
-
-    QTableWidgetItem *item = trackTable->item(row, 0);
-    if (!item) return;
-
-    int trackId = item->data(Qt::UserRole).toInt();
-    playTrackById(trackId);
-}
-
-void MainWindow::editTrackFromRow(int row) {
-    if (row < 0 || row >= trackTable->rowCount()) {
-        QMessageBox::warning(this, "Ошибка", "Неверный индекс строки");
-        return;
-    }
-
-    QTableWidgetItem *item = trackTable->item(row, 0);
-    if (!item) {
-        QMessageBox::warning(this, "Ошибка", "Трек не найден");
-        return;
-    }
-
-    int trackId = item->data(Qt::UserRole).toInt();
-    editTrackById(trackId);
-}
-
-void MainWindow::deleteTrackFromRow(int row) {
-    if (row < 0 || row >= trackTable->rowCount()) {
-        QMessageBox::warning(this, "Ошибка", "Неверный индекс строки");
-        return;
-    }
-
-    QTableWidgetItem *item = trackTable->item(row, 0);
-    if (!item) {
-        QMessageBox::warning(this, "Ошибка", "Трек не найден");
-        return;
-    }
-
-    int trackId = item->data(Qt::UserRole).toInt();
-    deleteTrackById(trackId);
-}
 
 void MainWindow::playTrackById(int trackId) {
     Track* track = catalog.findTrackById(trackId);
@@ -427,19 +294,30 @@ void MainWindow::playTrackById(int trackId) {
         return;
     }
 
-    if (!track->getFilePath().isEmpty()) {
-        MP3FileManager::openMP3File(track->getFilePath());
+    QString filePath = track->getFilePath();
+    
+    // Проверяем, является ли путь ссылкой на Яндекс Музыку
+    if (!filePath.isEmpty() && (filePath.startsWith("https://music.yandex.ru/") || 
+                                filePath.startsWith("http://music.yandex.ru/"))) {
+        // Открываем ссылку в браузере
+        QDesktopServices::openUrl(QUrl(filePath));
+        return;
+    }
+    
+    // Обычный локальный файл
+    if (!filePath.isEmpty()) {
+        MP3FileManager::openMP3File(filePath);
     } else {
         // Если путь не сохранен, пытаемся найти файл
-        QString filePath = mp3Manager.findFileByTrack(track->getId(),
-                                                      track->getTitle(),
-                                                      track->getArtist(),
-                                                      track->getAlbum(),
-                                                      track->getYear(),
-                                                      track->getGenre(),
-                                                      track->getDuration());
-        if (!filePath.isEmpty()) {
-            MP3FileManager::openMP3File(filePath);
+        QString foundPath = mp3Manager.findFileByTrack(track->getId(),
+                                                       track->getTitle(),
+                                                       track->getArtist(),
+                                                       track->getAlbum(),
+                                                       track->getYear(),
+                                                       track->getGenre(),
+                                                       track->getDuration());
+        if (!foundPath.isEmpty()) {
+            MP3FileManager::openMP3File(foundPath);
         } else {
             QMessageBox::warning(this, "Ошибка", "Файл не найден");
         }
@@ -470,7 +348,7 @@ void MainWindow::editTrackById(int trackId) {
     editDurationEdit->setValue(track->getDuration());
 
     currentTrackId = trackId;
-    stackedWidget->setCurrentIndex(4); // Экран редактирования
+    stackedWidget->setCurrentIndex(2); // Экран редактирования
 }
 
 void MainWindow::deleteTrackById(int trackId) {
@@ -500,43 +378,6 @@ void MainWindow::resetSearch() {
     searchMaxDuration->setValue(3600);
 }
 
-void MainWindow::sortTracks() {
-    int sortIndex = sortComboBox->currentIndex();
-
-    switch (sortIndex) {
-    case 0: // Без сортировки
-        // Не сортируем, просто обновляем таблицу
-        break;
-    case 1: // Название (А-Я)
-        catalog.sortByTitle(true);
-        break;
-    case 2: // Название (Я-А)
-        catalog.sortByTitle(false);
-        break;
-    case 3: // Исполнитель (А-Я)
-        catalog.sortByArtist(true);
-        break;
-    case 4: // Исполнитель (Я-А)
-        catalog.sortByArtist(false);
-        break;
-    case 5: // Год (по возрастанию)
-        catalog.sortByYear(true);
-        break;
-    case 6: // Год (по убыванию)
-        catalog.sortByYear(false);
-        break;
-    case 7: // Длительность (по возрастанию)
-        catalog.sortByDuration(true);
-        break;
-    case 8: // Длительность (по убыванию)
-        catalog.sortByDuration(false);
-        break;
-    }
-
-    if (sortIndex != 0) {
-        updateTrackTable();
-    }
-}
 
 void MainWindow::updateTrackTable() {
     QList<Track> tracks = catalog.findAllTracks();
@@ -645,27 +486,6 @@ void MainWindow::clearAddTrackForm() {
     }
 }
 
-Track MainWindow::getSelectedTrack() const {
-    int currentRow = trackTable->currentRow();
-    if (currentRow == -1) {
-        return Track();
-    }
-
-    QTableWidgetItem *item = trackTable->item(currentRow, 0);
-    if (!item) {
-        return Track();
-    }
-
-    int trackId = item->data(Qt::UserRole).toInt();
-    const Track* track = catalog.findTrackById(trackId);
-
-    if (track) {
-        return *track;
-    }
-
-    return Track();
-}
-
 QWidget* MainWindow::createMainCatalogScreen() {
     QWidget *catalogWidget = new QWidget;
     QVBoxLayout *layout = new QVBoxLayout(catalogWidget);
@@ -692,8 +512,10 @@ QWidget* MainWindow::createMainCatalogScreen() {
     // Панель управления
     QHBoxLayout *controlLayout = new QHBoxLayout;
     QPushButton *addButton = new QPushButton("Добавить трек");
+    QPushButton *yandexSearchButton = new QPushButton("Поиск в Яндекс Музыке");
 
     controlLayout->addWidget(addButton);
+    controlLayout->addWidget(yandexSearchButton);
     controlLayout->addStretch();
 
     layout->addWidget(titleLabel);
@@ -766,6 +588,7 @@ QWidget* MainWindow::createMainCatalogScreen() {
 
     // Подключение сигналов
     connect(addButton, &QPushButton::clicked, this, &MainWindow::showAddTrack);
+    connect(yandexSearchButton, &QPushButton::clicked, this, &MainWindow::searchYandexMusic);
     connect(applyFiltersBtn, &QPushButton::clicked, this, &MainWindow::searchTracks);
     connect(resetFiltersBtn, &QPushButton::clicked, this, [this]() {
         resetSearch();
@@ -836,118 +659,6 @@ QWidget* MainWindow::createAddTrackScreen() {
     return addWidget;
 }
 
-QWidget* MainWindow::createSearchScreen() {
-    QWidget *searchWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(searchWidget);
-
-    QLabel *titleLabel = new QLabel("Поиск и фильтры");
-    titleLabel->setStyleSheet("font-size: 20px; font-weight: bold; margin: 10px;");
-
-    // Группа фильтров
-    QGroupBox *filterGroup = new QGroupBox("Фильтры поиска");
-    QFormLayout *filterLayout = new QFormLayout(filterGroup);
-
-    // Локальные поля, чтобы не перезаписывать указатели панели справа
-    QLineEdit *localSearchTitleEdit = new QLineEdit;
-    QLineEdit *localSearchArtistEdit = new QLineEdit;
-    QLineEdit *localSearchAlbumEdit = new QLineEdit;
-    QLineEdit *localSearchGenreEdit = new QLineEdit;
-
-    QSpinBox *localSearchMinYear = new QSpinBox;
-    localSearchMinYear->setRange(1900, 2100);
-    localSearchMinYear->setSpecialValueText("Любой");
-    QSpinBox *localSearchMaxYear = new QSpinBox;
-    localSearchMaxYear->setRange(1900, 2100);
-    localSearchMaxYear->setSpecialValueText("Любой");
-
-    QSpinBox *localSearchMinDuration = new QSpinBox;
-    localSearchMinDuration->setRange(1, 3600);
-    localSearchMinDuration->setSpecialValueText("Любая");
-    localSearchMinDuration->setSuffix(" сек");
-    QSpinBox *localSearchMaxDuration = new QSpinBox;
-    localSearchMaxDuration->setRange(1, 3600);
-    localSearchMaxDuration->setSpecialValueText("Любая");
-    localSearchMaxDuration->setSuffix(" сек");
-
-    filterLayout->addRow("Название:", localSearchTitleEdit);
-    filterLayout->addRow("Исполнитель:", localSearchArtistEdit);
-    filterLayout->addRow("Альбом:", localSearchAlbumEdit);
-    filterLayout->addRow("Жанр:", localSearchGenreEdit);
-    filterLayout->addRow("Минимальный год:", localSearchMinYear);
-    filterLayout->addRow("Максимальный год:", localSearchMaxYear);
-    filterLayout->addRow("Минимальная длительность:", localSearchMinDuration);
-    filterLayout->addRow("Максимальная длительность:", localSearchMaxDuration);
-
-    // Кнопки
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *searchButton = new QPushButton("Поиск");
-    QPushButton *resetButton = new QPushButton("Сбросить фильтры");
-    QPushButton *showAllButton = new QPushButton("Показать все");
-    QPushButton *backButton = new QPushButton("Назад");
-
-    buttonLayout->addWidget(searchButton);
-    buttonLayout->addWidget(resetButton);
-    buttonLayout->addWidget(showAllButton);
-    buttonLayout->addStretch();
-    buttonLayout->addWidget(backButton);
-
-    layout->addWidget(titleLabel);
-    layout->addWidget(filterGroup);
-    layout->addLayout(buttonLayout);
-    layout->addStretch();
-
-    connect(searchButton, &QPushButton::clicked, this, &MainWindow::searchTracks);
-    connect(resetButton, &QPushButton::clicked, this, &MainWindow::resetSearch);
-    connect(showAllButton, &QPushButton::clicked, [this]() {
-        updateTrackTable();
-        showMainCatalog();
-    });
-    connect(backButton, &QPushButton::clicked, this, &MainWindow::showMainCatalog);
-
-    return searchWidget;
-}
-
-QWidget* MainWindow::createTrackDetailsScreen() {
-    QWidget *detailsWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(detailsWidget);
-
-    QLabel *titleLabel = new QLabel("Детали трека");
-    titleLabel->setStyleSheet("font-size: 20px; font-weight: bold; margin: 10px;");
-
-    QFormLayout *formLayout = new QFormLayout;
-
-    QLabel *idLabel = new QLabel;
-    QLabel *titleLabelValue = new QLabel;
-    QLabel *artistLabel = new QLabel;
-    QLabel *albumLabel = new QLabel;
-    QLabel *yearLabel = new QLabel;
-    QLabel *genreLabel = new QLabel;
-    QLabel *durationLabel = new QLabel;
-
-    formLayout->addRow("ID:", idLabel);
-    formLayout->addRow("Название:", titleLabelValue);
-    formLayout->addRow("Исполнитель:", artistLabel);
-    formLayout->addRow("Альбом:", albumLabel);
-    formLayout->addRow("Год:", yearLabel);
-    formLayout->addRow("Жанр:", genreLabel);
-    formLayout->addRow("Длительность:", durationLabel);
-
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *backButton = new QPushButton("Назад");
-
-    buttonLayout->addStretch();
-    buttonLayout->addWidget(backButton);
-
-    layout->addWidget(titleLabel);
-    layout->addLayout(formLayout);
-    layout->addLayout(buttonLayout);
-    layout->addStretch();
-
-    connect(backButton, &QPushButton::clicked, this, &MainWindow::showMainCatalog);
-
-    return detailsWidget;
-}
-
 QWidget* MainWindow::createEditTrackScreen() {
     QWidget *editWidget = new QWidget;
     QVBoxLayout *layout = new QVBoxLayout(editWidget);
@@ -1015,4 +726,140 @@ QWidget* MainWindow::createEditTrackScreen() {
     connect(cancelButton, &QPushButton::clicked, this, &MainWindow::showMainCatalog);
 
     return editWidget;
+}
+
+void MainWindow::searchYandexMusic()
+{
+    // Создаем диалог для поиска
+    if (!yandexSearchDialog) {
+        yandexSearchDialog = new QDialog(this);
+        yandexSearchDialog->setWindowTitle("Поиск в Яндекс Музыке");
+        yandexSearchDialog->setMinimumSize(600, 500);
+        
+        QVBoxLayout *dialogLayout = new QVBoxLayout(yandexSearchDialog);
+        
+        // Поле поиска
+        QHBoxLayout *searchLayout = new QHBoxLayout;
+        yandexSearchEdit = new QLineEdit;
+        yandexSearchEdit->setPlaceholderText("Введите название трека или исполнителя...");
+        QPushButton *searchBtn = new QPushButton("Поиск");
+        searchLayout->addWidget(yandexSearchEdit);
+        searchLayout->addWidget(searchBtn);
+        
+        // Список результатов
+        yandexResultsList = new QListWidget;
+        yandexResultsList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+        
+        // Кнопки
+        QHBoxLayout *buttonLayout = new QHBoxLayout;
+        QPushButton *importBtn = new QPushButton("Импортировать выбранные");
+        QPushButton *closeBtn = new QPushButton("Закрыть");
+        buttonLayout->addWidget(importBtn);
+        buttonLayout->addStretch();
+        buttonLayout->addWidget(closeBtn);
+        
+        dialogLayout->addLayout(searchLayout);
+        dialogLayout->addWidget(yandexResultsList);
+        dialogLayout->addLayout(buttonLayout);
+        
+        connect(searchBtn, &QPushButton::clicked, [this]() {
+            QString query = yandexSearchEdit->text().trimmed();
+            if (!query.isEmpty()) {
+                yandexResultsList->clear();
+                yandexResultsList->addItem("Поиск...");
+                yandexIntegrator->searchAndImportTracks(query);
+            }
+        });
+        
+        connect(importBtn, &QPushButton::clicked, this, &MainWindow::importSelectedYandexTracks);
+        connect(closeBtn, &QPushButton::clicked, yandexSearchDialog, &QDialog::accept);
+        
+        // Поиск по Enter
+        connect(yandexSearchEdit, &QLineEdit::returnPressed, searchBtn, &QPushButton::click);
+    }
+    
+    yandexSearchEdit->clear();
+    yandexResultsList->clear();
+    currentYandexTracks.clear();
+    yandexSearchDialog->exec();
+}
+
+void MainWindow::onYandexTracksFound(const QList<YandexTrack>& tracks)
+{
+    currentYandexTracks = tracks;
+    yandexResultsList->clear();
+    
+    if (tracks.isEmpty()) {
+        yandexResultsList->addItem("Треки не найдены");
+        return;
+    }
+    
+    for (const YandexTrack& track : tracks) {
+        QString itemText = QString("%1 - %2")
+                          .arg(track.artist)
+                          .arg(track.title);
+        
+        if (!track.album.isEmpty()) {
+            itemText += QString(" [%1]").arg(track.album);
+        }
+        
+        if (track.year > 0) {
+            itemText += QString(" (%1)").arg(track.year);
+        }
+        
+        if (track.duration > 0) {
+            int minutes = track.duration / 60;
+            int seconds = track.duration % 60;
+            itemText += QString(" - %1:%2")
+                        .arg(minutes, 2, 10, QChar('0'))
+                        .arg(seconds, 2, 10, QChar('0'));
+        }
+        
+        yandexResultsList->addItem(itemText);
+    }
+}
+
+void MainWindow::onYandexTrackImported(const QString& trackTitle)
+{
+    // Обновляем таблицу после импорта
+    updateTrackTable();
+}
+
+void MainWindow::onYandexError(const QString& errorMessage)
+{
+    QMessageBox::warning(this, "Ошибка Яндекс Музыки", errorMessage);
+    if (yandexResultsList) {
+        yandexResultsList->clear();
+        yandexResultsList->addItem("Ошибка: " + errorMessage);
+    }
+}
+
+void MainWindow::importSelectedYandexTracks()
+{
+    QList<QListWidgetItem*> selectedItems = yandexResultsList->selectedItems();
+    
+    if (selectedItems.isEmpty()) {
+        QMessageBox::information(this, "Информация", "Выберите треки для импорта");
+        return;
+    }
+    
+    int importedCount = 0;
+    
+    for (QListWidgetItem* item : selectedItems) {
+        int index = yandexResultsList->row(item);
+        if (index >= 0 && index < currentYandexTracks.size()) {
+            yandexIntegrator->importTrack(currentYandexTracks[index]);
+            importedCount++;
+        }
+    }
+    
+    if (importedCount > 0) {
+        QMessageBox::information(this, "Успех", 
+                                 QString("Импортировано треков: %1").arg(importedCount));
+        updateTrackTable();
+        // Удаляем импортированные элементы из списка
+        for (QListWidgetItem* item : selectedItems) {
+            delete item;
+        }
+    }
 }

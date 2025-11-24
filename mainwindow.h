@@ -8,12 +8,9 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QLineEdit>
-#include <QTextEdit>
 #include <QLabel>
-#include <QListWidget>
 #include <QTableWidget>
 #include <QHeaderView>
-#include <QCheckBox>
 #include <QComboBox>
 #include <QSpinBox>
 #include <QMessageBox>
@@ -24,11 +21,13 @@
 #include "MusicCatalog.h"
 #include "FileManager.h"
 #include "MP3FileManager.h"
-#include "SearchResultsWindow.h"
 #include "GenreManager.h"
-#include "ReportGenerator.h"
-#include <QListWidget>
+#include "YandexMusicAPI.h"
+#include "YandexMusicIntegrator.h"
 #include <QDir>
+#include <QDialog>
+#include <QListWidget>
+#include <QProgressBar>
 
 class MainWindow : public QMainWindow
 {
@@ -40,40 +39,31 @@ public:
 private slots:
     void showMainCatalog();
     void showAddTrack();
-    void showSearchFilters();
-    void showTrackDetails(int row);
     void addNewTrack();
     void searchTracks();
     void onMP3FileSelected();
     void openTrackFile(int row, int column);
     void autoSaveCatalog();
     void autoLoadCatalog();
-    void generateReport();
-    void deleteSelectedTrack();
-    void updateSelectedTrack();
-    void saveCatalog();
-    void loadCatalog();
     void resetSearch();
-    void sortTracks();
-    void playTrack(int row);
-    void editTrackFromRow(int row);
-    void deleteTrackFromRow(int row);
     void playTrackById(int trackId);
     void editTrackById(int trackId);
     void deleteTrackById(int trackId);
+    void searchYandexMusic();
+    void onYandexTracksFound(const QList<YandexTrack>& tracks);
+    void onYandexTrackImported(const QString& trackTitle);
+    void onYandexError(const QString& errorMessage);
+    void importSelectedYandexTracks();
 
 private:
     QStackedWidget *stackedWidget;
     MusicCatalog catalog;
     int currentTrackId;
     MP3FileManager mp3Manager;
-    SearchResultsWindow *searchResultsWindow;
 
     // Экраны
     QWidget *createMainCatalogScreen();
     QWidget *createAddTrackScreen();
-    QWidget *createSearchScreen();
-    QWidget *createTrackDetailsScreen();
     QWidget *createEditTrackScreen();
 
     // Вспомогательные методы
@@ -81,11 +71,9 @@ private:
     void updateTrackTable(const QList<Track>& tracksToDisplay);
     void clearAddTrackForm();
     void populateTrackTable(const QList<Track>& tracks);
-    Track getSelectedTrack() const;
 
     // Элементы UI
     QTableWidget *trackTable;
-    QComboBox *sortComboBox;
     QLineEdit *searchTitleEdit;
     QLineEdit *searchArtistEdit;
     QLineEdit *searchAlbumEdit;
@@ -116,6 +104,13 @@ private:
     // Вспомогательные методы для работы с жанрами
     QStringList getGenreList() const;
     void populateGenreComboBox(QComboBox *comboBox);
+    
+    // Яндекс Музыка
+    YandexMusicIntegrator* yandexIntegrator;
+    QDialog* yandexSearchDialog;
+    QListWidget* yandexResultsList;
+    QLineEdit* yandexSearchEdit;
+    QList<YandexTrack> currentYandexTracks;
 };
 
 #endif // MAINWINDOW_H
