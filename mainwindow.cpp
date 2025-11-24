@@ -22,7 +22,6 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(stackedWidget);
 
     // Создаем экраны
-    stackedWidget->addWidget(createLoginScreen());
     stackedWidget->addWidget(createMainCatalogScreen());
     stackedWidget->addWidget(createAddTrackScreen());
     stackedWidget->addWidget(createSearchScreen());
@@ -32,30 +31,26 @@ MainWindow::MainWindow(QWidget *parent)
     // Автозагрузка каталога при запуске
     autoLoadCatalog();
 
-    // Показываем экран входа
-    showLoginScreen();
-}
-
-void MainWindow::showLoginScreen() {
-    stackedWidget->setCurrentIndex(0);
+    // Показываем главный экран
+    showMainCatalog();
 }
 
 void MainWindow::showMainCatalog() {
     updateTrackTable();
-    stackedWidget->setCurrentIndex(1);
+    stackedWidget->setCurrentIndex(0);
 }
 
 void MainWindow::showAddTrack() {
     clearAddTrackForm();
-    stackedWidget->setCurrentIndex(2);
+    stackedWidget->setCurrentIndex(1);
 }
 
 void MainWindow::showSearchFilters() {
-    stackedWidget->setCurrentIndex(3);
+    stackedWidget->setCurrentIndex(2);
 }
 
 void MainWindow::showTrackDetails(int row) {
-    stackedWidget->setCurrentIndex(4);
+    stackedWidget->setCurrentIndex(3);
 }
 
 void MainWindow::addNewTrack() {
@@ -227,8 +222,8 @@ void MainWindow::updateSelectedTrack() {
         }
         editDurationEdit->setValue(track->getDuration());
 
-        currentTrackId = trackId;
-        stackedWidget->setCurrentIndex(5); // Экран редактирования
+    currentTrackId = trackId;
+    stackedWidget->setCurrentIndex(4); // Экран редактирования
     } else {
         QMessageBox::warning(this, "Ошибка", "Трек не найден");
     }
@@ -475,7 +470,7 @@ void MainWindow::editTrackById(int trackId) {
     editDurationEdit->setValue(track->getDuration());
 
     currentTrackId = trackId;
-    stackedWidget->setCurrentIndex(5); // Экран редактирования
+    stackedWidget->setCurrentIndex(4); // Экран редактирования
 }
 
 void MainWindow::deleteTrackById(int trackId) {
@@ -491,16 +486,6 @@ void MainWindow::deleteTrackById(int trackId) {
         } else {
             QMessageBox::warning(this, "Ошибка", "Не удалось удалить трек");
         }
-    }
-}
-
-void MainWindow::logout() {
-    QMessageBox::StandardButton reply = QMessageBox::question(this, "Выход",
-                                                              "Вы уверены, что хотите выйти?",
-                                                              QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes) {
-        showLoginScreen();
     }
 }
 
@@ -634,10 +619,6 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
     trackTable->setSortingEnabled(sortingWasEnabled);
 }
 
-bool MainWindow::validateLogin(const QString &username, const QString &password) {
-    return AuthenticationService::validateLogin(username, password);
-}
-
 QStringList MainWindow::getGenreList() const {
     return GenreManager::getGenreList();
 }
@@ -685,52 +666,6 @@ Track MainWindow::getSelectedTrack() const {
     return Track();
 }
 
-QWidget* MainWindow::createLoginScreen() {
-    QWidget *loginWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(loginWidget);
-
-    // Заголовок
-    QLabel *titleLabel = new QLabel("Authorization");
-    titleLabel->setStyleSheet("font-size: 24px; font-weight: bold; margin: 20px;");
-    titleLabel->setAlignment(Qt::AlignCenter);
-
-    // Форма входа
-    QWidget *formWidget = new QWidget;
-    QFormLayout *formLayout = new QFormLayout(formWidget);
-
-    QLineEdit *usernameEdit = new QLineEdit;
-    usernameEdit->setPlaceholderText("Введите имя пользователя");
-    QLineEdit *passwordEdit = new QLineEdit;
-    passwordEdit->setPlaceholderText("Введите пароль");
-    passwordEdit->setEchoMode(QLineEdit::Password);
-
-    formLayout->addRow("Username:", usernameEdit);
-    formLayout->addRow("Password:", passwordEdit);
-
-    // Кнопки
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *loginButton = new QPushButton("Sign in");
-
-    buttonLayout->addWidget(loginButton);
-    buttonLayout->addStretch();
-
-    layout->addWidget(titleLabel);
-    layout->addWidget(formWidget);
-    layout->addLayout(buttonLayout);
-    layout->addStretch();
-
-    // Подключение сигналов
-    connect(loginButton, &QPushButton::clicked, [this, usernameEdit, passwordEdit]() {
-        if (validateLogin(usernameEdit->text(), passwordEdit->text())) {
-            showMainCatalog();
-        } else {
-            QMessageBox::warning(this, "Ошибка", "Неверные данные");
-        }
-    });
-
-    return loginWidget;
-}
-
 QWidget* MainWindow::createMainCatalogScreen() {
     QWidget *catalogWidget = new QWidget;
     QVBoxLayout *layout = new QVBoxLayout(catalogWidget);
@@ -757,11 +692,9 @@ QWidget* MainWindow::createMainCatalogScreen() {
     // Панель управления
     QHBoxLayout *controlLayout = new QHBoxLayout;
     QPushButton *addButton = new QPushButton("Добавить трек");
-    QPushButton *logoutButton = new QPushButton("Выйти");
 
     controlLayout->addWidget(addButton);
     controlLayout->addStretch();
-    controlLayout->addWidget(logoutButton);
 
     layout->addWidget(titleLabel);
     layout->addLayout(controlLayout);
@@ -838,7 +771,6 @@ QWidget* MainWindow::createMainCatalogScreen() {
         resetSearch();
         updateTrackTable();
     });
-    connect(logoutButton, &QPushButton::clicked, this, &MainWindow::logout);
     connect(trackTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::openTrackFile);
     // Сортировка по клику по заголовку работает автоматически при setSortingEnabled(true)
 

@@ -27,7 +27,6 @@
 #include "SearchResultsWindow.h"
 #include "GenreManager.h"
 #include "ReportGenerator.h"
-#include "AuthenticationService.h"
 #include <QListWidget>
 #include <QDir>
 
@@ -39,7 +38,6 @@ public:
     MainWindow(QWidget *parent = nullptr);
 
 private slots:
-    void showLoginScreen();
     void showMainCatalog();
     void showAddTrack();
     void showSearchFilters();
@@ -55,7 +53,6 @@ private slots:
     void updateSelectedTrack();
     void saveCatalog();
     void loadCatalog();
-    void logout();
     void resetSearch();
     void sortTracks();
     void playTrack(int row);
@@ -73,7 +70,6 @@ private:
     SearchResultsWindow *searchResultsWindow;
 
     // Экраны
-    QWidget *createLoginScreen();
     QWidget *createMainCatalogScreen();
     QWidget *createAddTrackScreen();
     QWidget *createSearchScreen();
@@ -83,7 +79,6 @@ private:
     // Вспомогательные методы
     void updateTrackTable();
     void updateTrackTable(const QList<Track>& tracksToDisplay);
-    bool validateLogin(const QString &username, const QString &password);
     void clearAddTrackForm();
     void populateTrackTable(const QList<Track>& tracks);
     Track getSelectedTrack() const;
