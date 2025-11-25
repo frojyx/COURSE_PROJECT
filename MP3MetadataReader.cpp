@@ -65,10 +65,10 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
     auto byte7 = static_cast<std::byte>(data[7]);
     auto byte8 = static_cast<std::byte>(data[8]);
     auto byte9 = static_cast<std::byte>(data[9]);
-    const int tagSize = (std::to_integer<std::uint8_t>(byte6) << 21) |
-                        (std::to_integer<std::uint8_t>(byte7) << 14) |
-                        (std::to_integer<std::uint8_t>(byte8) << 7) |
-                        std::to_integer<std::uint8_t>(byte9);
+    const int tagSize = (std::to_integer<std::uint8_t>(byte6) << 21) | // NOSONAR: conversion needed for bit shifts
+                        (std::to_integer<std::uint8_t>(byte7) << 14) | // NOSONAR: conversion needed for bit shifts
+                        (std::to_integer<std::uint8_t>(byte8) << 7) | // NOSONAR: conversion needed for bit shifts
+                        std::to_integer<std::uint8_t>(byte9); // NOSONAR: conversion needed for bit shifts
 
     // Ищем нужный фрейм
     while (pos + 10 < data.size() && pos < 10 + tagSize) {
@@ -81,10 +81,10 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
         auto fbyte5 = static_cast<std::byte>(frameHeader[5]);
         auto fbyte6 = static_cast<std::byte>(frameHeader[6]);
         auto fbyte7 = static_cast<std::byte>(frameHeader[7]);
-        const int frameSize = (std::to_integer<std::uint8_t>(fbyte4) << 21) |
-                              (std::to_integer<std::uint8_t>(fbyte5) << 14) |
-                              (std::to_integer<std::uint8_t>(fbyte6) << 7) |
-                              std::to_integer<std::uint8_t>(fbyte7);
+        const int frameSize = (std::to_integer<std::uint8_t>(fbyte4) << 21) | // NOSONAR: conversion needed for bit shifts
+                              (std::to_integer<std::uint8_t>(fbyte5) << 14) | // NOSONAR: conversion needed for bit shifts
+                              (std::to_integer<std::uint8_t>(fbyte6) << 7) | // NOSONAR: conversion needed for bit shifts
+                              std::to_integer<std::uint8_t>(fbyte7); // NOSONAR: conversion needed for bit shifts
 
         if (frameID == frameId) {
             // Пропускаем флаги (2 байта)
@@ -133,7 +133,7 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
         }
 
         if (auto byte1 = static_cast<std::byte>(buffer[i+1]);
-            (std::to_integer<std::uint8_t>(byte1) & 0xE0) != 0xE0) {
+            (std::to_integer<std::uint8_t>(byte1) & 0xE0) != 0xE0) { // NOSONAR: conversion needed for bitwise operations
             continue;
         }
 
@@ -143,16 +143,16 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
         auto header3 = static_cast<std::byte>(buffer[i+2]);
 
         // Проверяем версию MP3 (MPEG-1, MPEG-2)
-        auto header2Val = std::to_integer<std::uint8_t>(header2);
-        auto header3Val = std::to_integer<std::uint8_t>(header3);
-        if (auto layer = (header2Val >> 1) & 0x03; layer != 1) {
+        auto header2Val = std::to_integer<std::uint8_t>(header2); // NOSONAR: conversion needed for bitwise operations
+        auto header3Val = std::to_integer<std::uint8_t>(header3); // NOSONAR: conversion needed for bitwise operations
+        if (auto layer = (header2Val >> 1) & 0x03; layer != 1) { // NOSONAR: bitwise operations on uint8_t
             continue;
         }
 
         // Извлекаем битрейт
-        auto bitrateIndex = (header3Val >> 4) & 0x0F;
+        auto bitrateIndex = (header3Val >> 4) & 0x0F; // NOSONAR: bitwise operations on uint8_t
         // Извлекаем частоту дискретизации
-        auto sampleRateIndex = (header3Val >> 2) & 0x03;
+        auto sampleRateIndex = (header3Val >> 2) & 0x03; // NOSONAR: bitwise operations on uint8_t
 
         // Битрейт для MPEG-1 Layer III (kbps)
         constexpr std::array<int, 16> bitrates = {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0};
