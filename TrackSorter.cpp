@@ -10,14 +10,19 @@ TrackSorter::TrackSorter(TrackRepository& repository)
 template <typename T, typename Compare>
 static void shellSort(QList<T>& list, Compare comp)
 {
-    int n = list.size();
+    const int n = list.size();
+
     for (int gap = n / 2; gap > 0; gap /= 2) {
         for (int i = gap; i < n; i++) {
+
             T temp = list[i];
-            int j;
-            for (j = i; j >= gap && comp(temp, list[j - gap]); j -= gap) {
+            int j = i;
+
+            while (j >= gap && comp(temp, list[j - gap])) {
                 list[j] = list[j - gap];
+                j -= gap;
             }
+
             list[j] = temp;
         }
     }
