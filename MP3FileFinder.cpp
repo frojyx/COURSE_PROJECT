@@ -24,8 +24,7 @@ QList<QFileInfo> MP3FileFinder::getMP3Files() const {
     QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
     for (const QFileInfo& fileInfo : fileList) {
         // Проверяем, что файл не начинается с цифры (ID) - это уже обработанные файлы
-        QString baseName = fileInfo.baseName();
-        if (!baseName.isEmpty() && baseName[0].isDigit() && baseName.contains('.')) {
+        if (QString baseName = fileInfo.baseName(); !baseName.isEmpty() && baseName[0].isDigit() && baseName.contains('.')) {
             // Файл уже обработан, пропускаем
             continue;
         }
@@ -45,9 +44,8 @@ QString MP3FileFinder::findFileByTrack(int id, const QString& title, const QStri
 
     // Сначала ищем файл с новым форматом имени
     QString expectedFileName = MP3FileOperations::createNewFileName(id, title, artist, album, year, genre, duration);
-    QString expectedPath = dir.absoluteFilePath(expectedFileName);
-
-    if (QFile::exists(expectedPath)) {
+    
+    if (QString expectedPath = dir.absoluteFilePath(expectedFileName); QFile::exists(expectedPath)) {
         return expectedPath;
     }
 

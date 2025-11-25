@@ -9,7 +9,7 @@
 class MusicCatalogException : public std::exception {
 public:
     explicit MusicCatalogException(const QString& message);
-    virtual ~MusicCatalogException() noexcept = default;
+    ~MusicCatalogException() noexcept override = default;
 
     // Возвращает сообщение об ошибке
     const char* what() const noexcept override;

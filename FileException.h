@@ -9,7 +9,7 @@ class FileException : public MusicCatalogException {
 public:
     explicit FileException(const QString& message);
     explicit FileException(const QString& filename, const QString& operation);
-    virtual ~FileException() noexcept = default;
+    ~FileException() noexcept override = default;
 };
 
 #endif // FILEEXCEPTION_H
