@@ -35,7 +35,7 @@ private:
     MusicCatalog* catalog;
     
     // Автоматическое сохранение после импорта
-    void autoSave();
+    void autoSave() const;
 };
 
 #endif // YANDEXMUSICINTEGRATOR_H

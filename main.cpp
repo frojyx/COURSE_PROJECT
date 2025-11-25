@@ -1,6 +1,6 @@
 // main.cpp
 #include <QApplication>
-#include "MainWindow.h"
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -9,5 +9,5 @@ int main(int argc, char *argv[])
     MainWindow window;
     window.show();
 
-    return app.exec();
+    return QApplication::exec();
 }

@@ -9,11 +9,11 @@ class ValidationException : public MusicCatalogException {
 public:
     explicit ValidationException(const QString& message);
     explicit ValidationException(const QString& fieldName, const QString& reason);
-    virtual ~ValidationException() noexcept = default;
+    ~ValidationException() noexcept override = default;
     
     QString getFieldName() const { return fieldName; }
 
-protected:
+private:
     QString fieldName;
 };
 

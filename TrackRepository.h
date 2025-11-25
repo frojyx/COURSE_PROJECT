@@ -35,7 +35,7 @@ public:
 
 private:
     QList<Track> tracks;
-    int nextId;
+    int nextId = 1;
 };
 
 #endif // TRACKREPOSITORY_H

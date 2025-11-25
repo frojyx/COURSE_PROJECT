@@ -2,7 +2,7 @@
 #include "TrackException.h"
 
 TrackException::TrackException(const QString& message)
-    : MusicCatalogException(message), trackId(-1)
+    : MusicCatalogException(message)
 {
 }
 

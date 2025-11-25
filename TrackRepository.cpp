@@ -2,12 +2,15 @@
 #include "TrackRepository.h"
 #include "TrackException.h"
 #include "ValidationException.h"
+#include "Track.h"
 
-TrackRepository::TrackRepository() : nextId(1) {}
+TrackRepository::TrackRepository() {}
 
 void TrackRepository::addTrack(const Track& track) {
     Track newTrack = track;
-    newTrack.setId(nextId++);
+    int currentId = nextId;
+    nextId = currentId + 1;
+    newTrack.setId(currentId);
     tracks.append(newTrack);
 }
 
@@ -31,13 +34,31 @@ void TrackRepository::addTrack(const QString& title, const QString& artist,
     if (artist.isEmpty()) {
         throw ValidationException("artist", "исполнитель не может быть пустым");
     }
-    Track track(nextId++, title, artist, album, year, genre, duration, filePath);
+    TrackParams params;
+    params.title = title;
+    params.artist = artist;
+    params.album = album;
+    params.year = year;
+    params.genre = genre;
+    params.duration = duration;
+    params.filePath = filePath;
+    int currentId = nextId;
+    nextId = currentId + 1;
+    Track track(currentId, params);
     tracks.append(track);
 }
 
 void TrackRepository::addTrackWithId(int id, const QString& title, const QString& artist,
                                       const QString& album, int year, const QString& genre, int duration, const QString& filePath) {
-    Track track(id, title, artist, album, year, genre, duration, filePath);
+    TrackParams params;
+    params.title = title;
+    params.artist = artist;
+    params.album = album;
+    params.year = year;
+    params.genre = genre;
+    params.duration = duration;
+    params.filePath = filePath;
+    Track track(id, params);
     tracks.append(track);
     if (id >= nextId) {
         nextId = id + 1;
@@ -45,9 +66,9 @@ void TrackRepository::addTrackWithId(int id, const QString& title, const QString
 }
 
 bool TrackRepository::removeTrack(int id) {
-    for (int i = 0; i < tracks.size(); ++i) {
-        if (tracks[i].getId() == id) {
-            tracks.removeAt(i);
+    for (auto it = tracks.begin(); it != tracks.end(); ++it) {
+        if (it->getId() == id) {
+            tracks.erase(it);
             return true;
         }
     }
@@ -63,10 +84,10 @@ bool TrackRepository::updateTrack(int id, const Track& updatedTrack) {
         throw ValidationException("artist", "исполнитель не может быть пустым");
     }
     
-    for (int i = 0; i < tracks.size(); ++i) {
-        if (tracks[i].getId() == id) {
-            tracks[i] = updatedTrack;
-            tracks[i].setId(id); // Сохраняем оригинальный ID
+    for (Track& track : tracks) {
+        if (track.getId() == id) {
+            track = updatedTrack;
+            track.setId(id); // Сохраняем оригинальный ID
             return true;
         }
     }
@@ -75,18 +96,18 @@ bool TrackRepository::updateTrack(int id, const Track& updatedTrack) {
 }
 
 Track* TrackRepository::findTrackById(int id) {
-    for (int i = 0; i < tracks.size(); ++i) {
-        if (tracks[i].getId() == id) {
-            return &tracks[i];
+    for (Track& track : tracks) {
+        if (track.getId() == id) {
+            return &track;
         }
     }
     return nullptr;
 }
 
 const Track* TrackRepository::findTrackById(int id) const {
-    for (int i = 0; i < tracks.size(); ++i) {
-        if (tracks[i].getId() == id) {
-            return &tracks[i];
+    for (const Track& track : tracks) {
+        if (track.getId() == id) {
+            return &track;
         }
     }
     return nullptr;

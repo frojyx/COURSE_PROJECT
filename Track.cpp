@@ -10,10 +10,9 @@ Track::Track(int id, const QString& title, const QString& artist,
     : id(id), title(title), artist(artist), album(album),
     year(year), genre(genre), duration(duration), filePath("") {}
 
-Track::Track(int id, const QString& title, const QString& artist,
-             const QString& album, int year, const QString& genre, int duration, const QString& filePath)
-    : id(id), title(title), artist(artist), album(album),
-    year(year), genre(genre), duration(duration), filePath(filePath) {}
+Track::Track(int id, const TrackParams& params)
+    : id(id), title(params.title), artist(params.artist), album(params.album),
+    year(params.year), genre(params.genre), duration(params.duration), filePath(params.filePath) {}
 
 QString Track::getFormattedDuration() const {
     int minutes = duration / 60;

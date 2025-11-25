@@ -4,13 +4,22 @@
 
 #include <QString>
 
+struct TrackParams {
+    QString title;
+    QString artist;
+    QString album;
+    int year;
+    QString genre;
+    int duration;
+    QString filePath;
+};
+
 class Track {
 public:
     Track();
     Track(int id, const QString& title, const QString& artist,
           const QString& album, int year, const QString& genre, int duration);
-    Track(int id, const QString& title, const QString& artist,
-          const QString& album, int year, const QString& genre, int duration, const QString& filePath);
+    Track(int id, const TrackParams& params);
 
     // Геттеры
     int getId() const { return id; }

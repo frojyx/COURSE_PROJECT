@@ -80,7 +80,7 @@ void YandexMusicIntegrator::onErrorOccurred(const QString& errorMessage)
     emit errorOccurred(errorMessage);
 }
 
-void YandexMusicIntegrator::autoSave()
+void YandexMusicIntegrator::autoSave() const
 {
     // Автоматическое сохранение каталога
     QString fileName = "catalog_autosave.txt";

@@ -32,7 +32,7 @@ class YandexMusicAPI : public QObject
 
 public:
     explicit YandexMusicAPI(QObject *parent = nullptr);
-    ~YandexMusicAPI();
+    ~YandexMusicAPI() override;
 
     // Поиск треков
     void searchTracks(const QString& query, int page = 0, int limit = 20);
@@ -58,11 +58,11 @@ private:
     YandexTrack parseTrackInfo(const QJsonDocument& json);
     
     // Вспомогательные методы
-    QString extractArtist(const QJsonObject& trackObj);
-    QString extractAlbum(const QJsonObject& trackObj);
-    int extractYear(const QJsonObject& trackObj);
-    QString extractGenre(const QJsonObject& trackObj);
-    int extractDuration(const QJsonObject& trackObj);
+    QString extractArtist(const QJsonObject& trackObj) const;
+    QString extractAlbum(const QJsonObject& trackObj) const;
+    int extractYear(const QJsonObject& trackObj) const;
+    QString extractGenre(const QJsonObject& trackObj) const;
+    int extractDuration(const QJsonObject& trackObj) const;
 };
 
 #endif // YANDEXMUSICAPI_H

@@ -19,9 +19,7 @@ YandexMusicAPI::YandexMusicAPI(QObject *parent)
     });
 }
 
-YandexMusicAPI::~YandexMusicAPI()
-{
-}
+YandexMusicAPI::~YandexMusicAPI() = default;
 
 void YandexMusicAPI::searchTracks(const QString& query, int page, int limit)
 {
@@ -74,9 +72,8 @@ void YandexMusicAPI::onSearchFinished(QNetworkReply* reply)
         
         // Ищем JSON в ответе
         int jsonStart = response.indexOf('{');
-        int jsonEnd = response.lastIndexOf('}');
         
-        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        if (int jsonEnd = response.lastIndexOf('}'); jsonStart >= 0 && jsonEnd > jsonStart) {
             QString jsonString = response.mid(jsonStart, jsonEnd - jsonStart + 1);
             jsonDoc = QJsonDocument::fromJson(jsonString.toUtf8(), &parseError);
         }
@@ -111,55 +108,64 @@ void YandexMusicAPI::onTrackInfoFinished(QNetworkReply* reply)
     emit trackInfoReceived(track);
 }
 
-QList<YandexTrack> YandexMusicAPI::parseSearchResults(const QJsonDocument& json)
-{
-    QList<YandexTrack> tracks;
-    
-    QJsonObject root = json.object();
-    
-    // Различные варианты структуры ответа Яндекс Музыки
-    QJsonArray tracksArray;
-    
-    if (root.contains("tracks")) {
-        QJsonObject tracksObj = root["tracks"].toObject();
-        if (tracksObj.contains("results")) {
-            tracksArray = tracksObj["results"].toArray();
-        } else if (tracksObj.contains("items")) {
-            tracksArray = tracksObj["items"].toArray();
-        }
-    } else if (root.contains("results")) {
-        QJsonObject resultsObj = root["results"].toObject();
-        if (resultsObj.contains("tracks")) {
-            QJsonObject tracksObj = resultsObj["tracks"].toObject();
+namespace {
+    QJsonArray extractTracksArray(const QJsonObject& root) {
+        if (root.contains("tracks")) {
+            QJsonObject tracksObj = root["tracks"].toObject();
             if (tracksObj.contains("results")) {
-                tracksArray = tracksObj["results"].toArray();
+                return tracksObj["results"].toArray();
+            }
+            if (tracksObj.contains("items")) {
+                return tracksObj["items"].toArray();
             }
         }
-    } else if (root.contains("items")) {
-        tracksArray = root["items"].toArray();
+        if (root.contains("results")) {
+            QJsonObject resultsObj = root["results"].toObject();
+            if (resultsObj.contains("tracks")) {
+                QJsonObject tracksObj = resultsObj["tracks"].toObject();
+                if (tracksObj.contains("results")) {
+                    return tracksObj["results"].toArray();
+                }
+            }
+        }
+        if (root.contains("items")) {
+            return root["items"].toArray();
+        }
+        return QJsonArray();
     }
     
-    for (const QJsonValue& value : tracksArray) {
-        QJsonObject trackObj = value.toObject();
-        
-        YandexTrack track;
-        track.id = trackObj["id"].toString();
-        
-        // ID альбома для формирования ссылки
+    void extractAlbumId(YandexTrack& track, const QJsonObject& trackObj) {
         if (trackObj.contains("albums")) {
             QJsonArray albums = trackObj["albums"].toArray();
             if (!albums.isEmpty()) {
                 QJsonObject album = albums[0].toObject();
                 if (album.contains("id")) {
                     track.albumId = album["id"].toString();
+                    return;
                 }
             }
-        } else if (trackObj.contains("album")) {
+        }
+        if (trackObj.contains("album")) {
             QJsonObject album = trackObj["album"].toObject();
             if (album.contains("id")) {
                 track.albumId = album["id"].toString();
             }
         }
+    }
+}
+
+QList<YandexTrack> YandexMusicAPI::parseSearchResults(const QJsonDocument& json)
+{
+    QList<YandexTrack> tracks;
+    QJsonObject root = json.object();
+    QJsonArray tracksArray = extractTracksArray(root);
+    
+    for (const QJsonValue& value : tracksArray) {
+        QJsonObject trackObj = value.toObject();
+        
+        YandexTrack track;
+        track.id = trackObj["id"].toString();
+        extractAlbumId(track, trackObj);
         
         // Название трека
         if (trackObj.contains("title")) {
@@ -204,28 +210,12 @@ QList<YandexTrack> YandexMusicAPI::parseSearchResults(const QJsonDocument& json)
 YandexTrack YandexMusicAPI::parseTrackInfo(const QJsonDocument& json)
 {
     YandexTrack track;
-    QJsonObject root = json.object();
     
-    if (root.contains("track")) {
+    if (QJsonObject root = json.object(); root.contains("track")) {
         QJsonObject trackObj = root["track"].toObject();
         
         track.id = trackObj["id"].toString();
-        
-        // ID альбома для формирования ссылки
-        if (trackObj.contains("albums")) {
-            QJsonArray albums = trackObj["albums"].toArray();
-            if (!albums.isEmpty()) {
-                QJsonObject album = albums[0].toObject();
-                if (album.contains("id")) {
-                    track.albumId = album["id"].toString();
-                }
-            }
-        } else if (trackObj.contains("album")) {
-            QJsonObject album = trackObj["album"].toObject();
-            if (album.contains("id")) {
-                track.albumId = album["id"].toString();
-            }
-        }
+        extractAlbumId(track, trackObj);
         
         track.title = trackObj["title"].toString();
         track.artist = extractArtist(trackObj);
@@ -238,7 +228,7 @@ YandexTrack YandexMusicAPI::parseTrackInfo(const QJsonDocument& json)
     return track;
 }
 
-QString YandexMusicAPI::extractArtist(const QJsonObject& trackObj)
+QString YandexMusicAPI::extractArtist(const QJsonObject& trackObj) const
 {
     if (trackObj.contains("artists")) {
         QJsonArray artists = trackObj["artists"].toArray();
@@ -265,7 +255,7 @@ QString YandexMusicAPI::extractArtist(const QJsonObject& trackObj)
     return "";
 }
 
-QString YandexMusicAPI::extractAlbum(const QJsonObject& trackObj)
+QString YandexMusicAPI::extractAlbum(const QJsonObject& trackObj) const
 {
     if (trackObj.contains("albums")) {
         QJsonArray albums = trackObj["albums"].toArray();
@@ -285,7 +275,7 @@ QString YandexMusicAPI::extractAlbum(const QJsonObject& trackObj)
     return "";
 }
 
-int YandexMusicAPI::extractYear(const QJsonObject& trackObj)
+int YandexMusicAPI::extractYear(const QJsonObject& trackObj) const
 {
     if (trackObj.contains("albums")) {
         QJsonArray albums = trackObj["albums"].toArray();
@@ -307,7 +297,7 @@ int YandexMusicAPI::extractYear(const QJsonObject& trackObj)
     return 0;
 }
 
-QString YandexMusicAPI::extractGenre(const QJsonObject& trackObj)
+QString YandexMusicAPI::extractGenre(const QJsonObject& trackObj) const
 {
     if (trackObj.contains("genre")) {
         return trackObj["genre"].toString();
@@ -324,7 +314,7 @@ QString YandexMusicAPI::extractGenre(const QJsonObject& trackObj)
     return "";
 }
 
-int YandexMusicAPI::extractDuration(const QJsonObject& trackObj)
+int YandexMusicAPI::extractDuration(const QJsonObject& trackObj) const
 {
     if (trackObj.contains("durationMs")) {
         return trackObj["durationMs"].toInt() / 1000; // конвертируем миллисекунды в секунды
