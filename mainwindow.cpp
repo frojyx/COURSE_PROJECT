@@ -215,7 +215,7 @@ void MainWindow::onMP3FileSelected() {
 void MainWindow::fillFormFromParsedFileName(const QString& fileBaseName, [[maybe_unused]] const QString& title, 
                                             [[maybe_unused]] const QString& artist, const QString& parsedAlbum,
                                             int parsedYear, const QString& parsedGenre, int parsedDuration) {
-    QString baseName = QFileInfo(fileBaseName).baseName();
+        QString baseName = QFileInfo(fileBaseName).baseName();
     if (baseName.isEmpty() || !baseName[0].isDigit()) {
         return;
     }
@@ -224,7 +224,7 @@ void MainWindow::fillFormFromParsedFileName(const QString& fileBaseName, [[maybe
         return;
     }
     
-    // Полный формат найден - заполняем все поля
+                // Полный формат найден - заполняем все поля
                 if (!parsedAlbum.isEmpty()) {
                     addTrackUI.addAlbumEdit->setText(parsedAlbum);
                 }
@@ -279,12 +279,12 @@ void MainWindow::openTrackFile(int row, int column) {
     } else {
         // Если путь не сохранен, пытаемся найти файл
         QString foundPath = mp3Manager.findFileByTrack(track->getId(),
-                                                       track->getTitle(),
-                                                       track->getArtist(),
-                                                       track->getAlbum(),
-                                                       track->getYear(),
-                                                       track->getGenre(),
-                                                       track->getDuration());
+                                                      track->getTitle(),
+                                                      track->getArtist(),
+                                                      track->getAlbum(),
+                                                      track->getYear(),
+                                                      track->getGenre(),
+                                                      track->getDuration());
         if (!foundPath.isEmpty()) {
             MP3FileManager::openMP3File(foundPath);
         } else {
@@ -311,19 +311,19 @@ void MainWindow::playTrackById(int trackId) {
         QDesktopServices::openUrl(QUrl(filePath));
         return;
     }
-    
+
     // Обычный локальный файл
     if (!filePath.isEmpty()) {
         MP3FileManager::openMP3File(filePath);
     } else {
         // Если путь не сохранен, пытаемся найти файл
         QString foundPath = mp3Manager.findFileByTrack(track->getId(),
-                                                       track->getTitle(),
-                                                       track->getArtist(),
-                                                       track->getAlbum(),
-                                                       track->getYear(),
-                                                       track->getGenre(),
-                                                       track->getDuration());
+                                                      track->getTitle(),
+                                                      track->getArtist(),
+                                                      track->getAlbum(),
+                                                      track->getYear(),
+                                                      track->getGenre(),
+                                                      track->getDuration());
         if (!foundPath.isEmpty()) {
             MP3FileManager::openMP3File(foundPath);
         } else {
@@ -383,7 +383,7 @@ void MainWindow::resetSearch() {
     searchUI.searchMaxYear->setValue(2100);
     searchUI.searchMinDuration->setValue(1);
     searchUI.searchMaxDuration->setValue(3600);
-}
+    }
 
 
 void MainWindow::updateTrackTable() {
@@ -490,7 +490,7 @@ void MainWindow::clearAddTrackForm() {
     if (addTrackUI.selectedFileLabel) {
         addTrackUI.selectedFileLabel->setText("Файл не выбран");
         addTrackUI.selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
-    }
+        }
 }
 
 QWidget* MainWindow::createMainCatalogScreen() {
@@ -724,7 +724,7 @@ QWidget* MainWindow::createEditTrackScreen() {
         if (catalog.updateTrack(currentTrackId, updatedTrack)) {
             QMessageBox::information(this, "Успех", "Трек успешно обновлен!");
             autoSaveCatalog();
-            showMainCatalog();
+        showMainCatalog();
         } else {
             QMessageBox::warning(this, "Ошибка", "Не удалось обновить трек");
         }
@@ -768,7 +768,7 @@ void MainWindow::searchYandexMusic()
         dialogLayout->addLayout(searchLayout);
         dialogLayout->addWidget(yandexUI.resultsList);
         dialogLayout->addLayout(buttonLayout);
-        
+
         connect(searchBtn, &QPushButton::clicked, [this]() {
             QString query = yandexUI.searchEdit->text().trimmed();
             if (!query.isEmpty()) {
@@ -847,9 +847,9 @@ void MainWindow::importSelectedYandexTracks()
     
     if (selectedItems.isEmpty()) {
         QMessageBox::information(this, "Информация", "Выберите треки для импорта");
-        return;
-    }
-    
+            return;
+        }
+
     int importedCount = 0;
     
     for (const QListWidgetItem* item : selectedItems) {

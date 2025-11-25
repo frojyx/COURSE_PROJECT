@@ -100,7 +100,7 @@ private:
         QSpinBox *addYearEdit = nullptr;
         QComboBox *addGenreEdit = nullptr;
         QSpinBox *addDurationEdit = nullptr;
-        QString selectedMP3FilePath;
+    QString selectedMP3FilePath;
     };
     AddTrackUI addTrackUI;
 
