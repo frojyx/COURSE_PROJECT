@@ -47,28 +47,32 @@ QStringList TXTParser::parseLine(const QString& line) {
 
     // Парсинг TXT с учетом экранирования
     const int lineLen = line.length();
-    for (int i = 0; i < lineLen; ++i) {
+    int i = 0;
+    while (i < lineLen) {
         const QChar c = line.at(i);
         
         if (escapeNext) {
             handleEscapedChar(c, field, i, line);
             escapeNext = false;
+            ++i;
             continue;
         }
         
         if (c == '\\') {
             escapeNext = true;
+            ++i;
             continue;
         }
         
         if (isSeparatorAt(line, i)) {
             fields.append(field);
             field.clear();
-            i += 2;
+            i += 3; // Пропускаем "|||"
             continue;
         }
         
         field.append(c);
+        ++i;
     }
     
     if (escapeNext) {

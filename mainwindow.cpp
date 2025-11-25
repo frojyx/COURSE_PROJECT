@@ -220,8 +220,7 @@ void MainWindow::fillFormFromParsedFileName(const QString& fileBaseName, [[maybe
         return;
     }
     
-    QStringList parts = baseName.split('.');
-    if (parts.size() < 7) {
+    if (QStringList parts = baseName.split('.'); parts.size() < 7) {
         return;
     }
     

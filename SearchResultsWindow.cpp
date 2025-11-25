@@ -38,8 +38,8 @@ void SearchResultsWindow::setupUI() {
     connect(resultsTable, &QTableWidget::cellDoubleClicked, this, &SearchResultsWindow::onTrackDoubleClicked);
 }
 
-void SearchResultsWindow::setResults(const QList<Track>& tracks) {
-    this->tracks = tracks;
+void SearchResultsWindow::setResults(const QList<Track>& newTracks) {
+    tracks = newTracks;
     resultsTable->setRowCount(tracks.size());
 
     for (int i = 0; i < tracks.size(); ++i) {
