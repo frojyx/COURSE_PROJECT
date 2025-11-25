@@ -121,14 +121,21 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
     auto toByte = [](char c) { return static_cast<std::byte>(static_cast<unsigned char>(c)); };
 
     for (int i = 0; i < buffer.size() - 4; ++i) {
-        std::byte b0 = toByte(buffer[i]);
-        std::byte b1 = toByte(buffer[i + 1]);
+        std::byte b0 = std::byte{static_cast<unsigned char>(buffer[i])};
+        std::byte b1 = std::byte{static_cast<unsigned char>(buffer[i + 1])};
+        std::byte b2 = std::byte{static_cast<unsigned char>(buffer[i + 2])};
 
-        if (std::to_integer<unsigned>(b0) != 0xFF) continue;
-        if ((std::to_integer<unsigned>(b1) & 0xE0) != 0xE0) continue;
+        if (std::to_integer<unsigned>(b0) != 0xFF) {
+            continue;
+        }
 
-        std::byte h2 = toByte(buffer[i + 1]);
-        std::byte h3 = toByte(buffer[i + 2]);
+        if ((std::to_integer<unsigned>(b1) & 0xE0) != 0xE0) {
+            continue;
+        }
+
+        // MPEG version + layer bits находятся в b1 и b2
+        std::byte h2 = b1;
+        std::byte h3 = b2;
 
         uint8_t h2val = std::to_integer<uint8_t>(h2);
         uint8_t h3val = std::to_integer<uint8_t>(h3);
