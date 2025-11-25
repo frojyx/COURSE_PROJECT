@@ -4,7 +4,7 @@
 #include "ValidationException.h"
 #include "Track.h"
 
-TrackRepository::TrackRepository() {}
+TrackRepository::TrackRepository() = default;
 
 void TrackRepository::addTrack(const Track& track) {
     Track newTrack = track;

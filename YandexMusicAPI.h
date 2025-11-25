@@ -54,8 +54,8 @@ private:
     QNetworkAccessManager* networkManager;
     
     // Парсинг JSON ответов
-    QList<YandexTrack> parseSearchResults(const QJsonDocument& json);
-    YandexTrack parseTrackInfo(const QJsonDocument& json);
+    QList<YandexTrack> parseSearchResults(const QJsonDocument& json) const;
+    YandexTrack parseTrackInfo(const QJsonDocument& json) const;
     
     // Вспомогательные методы
     QString extractArtist(const QJsonObject& trackObj) const;

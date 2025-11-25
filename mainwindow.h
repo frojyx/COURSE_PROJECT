@@ -35,7 +35,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
 
 private slots:
     void showMainCatalog();
@@ -44,7 +44,7 @@ private slots:
     void searchTracks();
     void onMP3FileSelected();
     void openTrackFile(int row, int column);
-    void autoSaveCatalog();
+    void autoSaveCatalog() const;
     void autoLoadCatalog();
     void resetSearch();
     void playTrackById(int trackId);
@@ -57,9 +57,10 @@ private slots:
     void importSelectedYandexTracks();
 
 private:
+    // Основные компоненты
     QStackedWidget *stackedWidget;
     MusicCatalog catalog;
-    int currentTrackId;
+    int currentTrackId = -1;
     MP3FileManager mp3Manager;
 
     // Экраны
@@ -72,46 +73,55 @@ private:
     void updateTrackTable(const QList<Track>& tracksToDisplay);
     void clearAddTrackForm();
     void populateTrackTable(const QList<Track>& tracks);
+    void fillFormFromParsedFileName(const QString& fileBaseName, const QString& title, 
+                                    const QString& artist, const QString& parsedAlbum,
+                                    int parsedYear, const QString& parsedGenre, int parsedDuration);
+    void fillFormFromMP3Metadata(const QString& fileName);
 
-    // Элементы UI
-    QTableWidget *trackTable;
-    QLineEdit *searchTitleEdit;
-    QLineEdit *searchArtistEdit;
-    QLineEdit *searchAlbumEdit;
-    QLineEdit *searchGenreEdit;
-    QSpinBox *searchMinYear;
-    QSpinBox *searchMaxYear;
-    QSpinBox *searchMinDuration;
-    QSpinBox *searchMaxDuration;
+    // Структуры для группировки UI элементов
+    struct SearchUI {
+        QTableWidget *trackTable = nullptr;
+        QLineEdit *searchTitleEdit = nullptr;
+        QLineEdit *searchArtistEdit = nullptr;
+        QLineEdit *searchAlbumEdit = nullptr;
+        QLineEdit *searchGenreEdit = nullptr;
+        QSpinBox *searchMinYear = nullptr;
+        QSpinBox *searchMaxYear = nullptr;
+        QSpinBox *searchMinDuration = nullptr;
+        QSpinBox *searchMaxDuration = nullptr;
+    } searchUI;
 
-    // Форма добавления трека
-    QLabel *selectedFileLabel; // Метка для отображения выбранного файла
-    QLineEdit *addTitleEdit;
-    QLineEdit *addArtistEdit;
-    QLineEdit *addAlbumEdit;
-    QSpinBox *addYearEdit;
-    QComboBox *addGenreEdit;
-    QSpinBox *addDurationEdit;
-    QString selectedMP3FilePath;
+    struct AddTrackUI {
+        QLabel *selectedFileLabel = nullptr;
+        QLineEdit *addTitleEdit = nullptr;
+        QLineEdit *addArtistEdit = nullptr;
+        QLineEdit *addAlbumEdit = nullptr;
+        QSpinBox *addYearEdit = nullptr;
+        QComboBox *addGenreEdit = nullptr;
+        QSpinBox *addDurationEdit = nullptr;
+        QString selectedMP3FilePath;
+    } addTrackUI;
 
-    // Форма редактирования трека
-    QLineEdit *editTitleEdit;
-    QLineEdit *editArtistEdit;
-    QLineEdit *editAlbumEdit;
-    QSpinBox *editYearEdit;
-    QComboBox *editGenreEdit;
-    QSpinBox *editDurationEdit;
+    struct EditTrackUI {
+        QLineEdit *editTitleEdit = nullptr;
+        QLineEdit *editArtistEdit = nullptr;
+        QLineEdit *editAlbumEdit = nullptr;
+        QSpinBox *editYearEdit = nullptr;
+        QComboBox *editGenreEdit = nullptr;
+        QSpinBox *editDurationEdit = nullptr;
+    } editTrackUI;
+
+    struct YandexMusicUI {
+        YandexMusicIntegrator* integrator = nullptr;
+        QDialog* searchDialog = nullptr;
+        QListWidget* resultsList = nullptr;
+        QLineEdit* searchEdit = nullptr;
+        QList<YandexTrack> currentTracks;
+    } yandexUI;
 
     // Вспомогательные методы для работы с жанрами
     QStringList getGenreList() const;
-    void populateGenreComboBox(QComboBox *comboBox);
-    
-    // Яндекс Музыка
-    YandexMusicIntegrator* yandexIntegrator;
-    QDialog* yandexSearchDialog;
-    QListWidget* yandexResultsList;
-    QLineEdit* yandexSearchEdit;
-    QList<YandexTrack> currentYandexTracks;
+    void populateGenreComboBox(QComboBox *comboBox) const;
 };
 
 #endif // MAINWINDOW_H

@@ -64,13 +64,14 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
             if (encoding == 1 || encoding == 2) {
                 // UTF-16 with BOM или UTF-16BE
                 QByteArray utf16Data = frameData.mid(1);
-                if (utf16Data.size() % 2 == 0) {
-                    // Используем более безопасный способ преобразования
-                    const auto* dataPtr = utf16Data.constData();
-                    const auto* utf16Ptr = reinterpret_cast<const char16_t*>(dataPtr);
-                    QString result = QString::fromUtf16(utf16Ptr, utf16Data.size() / 2);
-                    return result.trimmed();
+                if (utf16Data.size() % 2 != 0) {
+                    continue;
                 }
+                // Используем более безопасный способ преобразования
+                const auto* dataPtr = utf16Data.constData();
+                const auto* utf16Ptr = reinterpret_cast<const char16_t*>(dataPtr);
+                QString result = QString::fromUtf16(utf16Ptr, utf16Data.size() / 2);
+                return result.trimmed();
             }
         }
 
@@ -96,13 +97,12 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
 
     // Ищем MP3 фрейм (синхронное слово 0xFFE0-0xFFEF)
     for (int i = 0; i < buffer.size() - 4; ++i) {
-        auto byte0 = static_cast<std::byte>(buffer[i]);
-        
-        if (std::to_integer<std::uint8_t>(byte0) != 0xFF) {
+        if (std::byte byte0 = static_cast<std::byte>(buffer[i]);
+            std::to_integer<std::uint8_t>(byte0) != 0xFF) {
             continue;
         }
         
-        if (auto byte1 = static_cast<std::byte>(buffer[i+1]);
+        if (std::byte byte1 = static_cast<std::byte>(buffer[i+1]);
             (std::to_integer<std::uint8_t>(byte1) & 0xE0) != 0xE0) {
             continue;
         }

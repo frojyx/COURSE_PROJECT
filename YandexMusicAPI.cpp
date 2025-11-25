@@ -154,7 +154,7 @@ namespace {
     }
 }
 
-QList<YandexTrack> YandexMusicAPI::parseSearchResults(const QJsonDocument& json)
+QList<YandexTrack> YandexMusicAPI::parseSearchResults(const QJsonDocument& json) const
 {
     QList<YandexTrack> tracks;
     QJsonObject root = json.object();
@@ -207,7 +207,7 @@ QList<YandexTrack> YandexMusicAPI::parseSearchResults(const QJsonDocument& json)
     return tracks;
 }
 
-YandexTrack YandexMusicAPI::parseTrackInfo(const QJsonDocument& json)
+YandexTrack YandexMusicAPI::parseTrackInfo(const QJsonDocument& json) const
 {
     YandexTrack track;
     

@@ -1,5 +1,5 @@
 // mainwindow.cpp
-#include "MainWindow.h"
+#include "mainwindow.h"
 #include <QFormLayout>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -15,7 +15,7 @@
 #include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), currentTrackId(-1), yandexIntegrator(nullptr), yandexSearchDialog(nullptr)
+    : QMainWindow(parent)
 {
     setWindowTitle("Музыкальный каталог");
     setMinimumSize(1000, 700);
@@ -24,12 +24,12 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(stackedWidget);
 
     // Инициализируем интегратор Яндекс Музыки
-    yandexIntegrator = new YandexMusicIntegrator(&catalog, this);
-    connect(yandexIntegrator, &YandexMusicIntegrator::tracksFound,
+    yandexUI.integrator = new YandexMusicIntegrator(&catalog, this);
+    connect(yandexUI.integrator, &YandexMusicIntegrator::tracksFound,
             this, &MainWindow::onYandexTracksFound);
-    connect(yandexIntegrator, &YandexMusicIntegrator::trackImported,
+    connect(yandexUI.integrator, &YandexMusicIntegrator::trackImported,
             this, &MainWindow::onYandexTrackImported);
-    connect(yandexIntegrator, &YandexMusicIntegrator::errorOccurred,
+    connect(yandexUI.integrator, &YandexMusicIntegrator::errorOccurred,
             this, &MainWindow::onYandexError);
 
     // Создаем экраны
@@ -55,12 +55,12 @@ void MainWindow::showAddTrack() {
 }
 
 void MainWindow::addNewTrack() {
-    if (selectedMP3FilePath.isEmpty()) {
+    if (addTrackUI.selectedMP3FilePath.isEmpty()) {
         QMessageBox::warning(this, "Ошибка", "Выберите MP3 файл");
         return;
     }
 
-    if (addTitleEdit->text().isEmpty() || addArtistEdit->text().isEmpty()) {
+    if (addTrackUI.addTitleEdit->text().isEmpty() || addTrackUI.addArtistEdit->text().isEmpty()) {
         QMessageBox::warning(this, "Ошибка", "Заполните обязательные поля (Название и Исполнитель)");
         return;
     }
@@ -70,27 +70,27 @@ void MainWindow::addNewTrack() {
 
     // Переименовываем файл
     QString newFileName = MP3FileManager::createNewFileName(newId,
-                                                            addTitleEdit->text(),
-                                                            addArtistEdit->text(),
-                                                            addAlbumEdit->text(),
-                                                            addYearEdit->value(),
-                                                            addGenreEdit->currentText(),
-                                                            addDurationEdit->value());
+                                                            addTrackUI.addTitleEdit->text(),
+                                                            addTrackUI.addArtistEdit->text(),
+                                                            addTrackUI.addAlbumEdit->text(),
+                                                            addTrackUI.addYearEdit->value(),
+                                                            addTrackUI.addGenreEdit->currentText(),
+                                                            addTrackUI.addDurationEdit->value());
 
-    QString newFilePath = QFileInfo(selectedMP3FilePath).absolutePath() + "/" + newFileName;
+    QString newFilePath = QFileInfo(addTrackUI.selectedMP3FilePath).absolutePath() + "/" + newFileName;
 
-    if (!MP3FileManager::renameFile(selectedMP3FilePath, newFileName)) {
+    if (!MP3FileManager::renameFile(addTrackUI.selectedMP3FilePath, newFileName)) {
         QMessageBox::warning(this, "Предупреждение", "Не удалось переименовать файл");
         // Используем старый путь
-        newFilePath = selectedMP3FilePath;
+        newFilePath = addTrackUI.selectedMP3FilePath;
     }
 
-    catalog.addTrack(addTitleEdit->text(),
-                     addArtistEdit->text(),
-                     addAlbumEdit->text(),
-                     addYearEdit->value(),
-                     addGenreEdit->currentText(),
-                     addDurationEdit->value(),
+    catalog.addTrack(addTrackUI.addTitleEdit->text(),
+                     addTrackUI.addArtistEdit->text(),
+                     addTrackUI.addAlbumEdit->text(),
+                     addTrackUI.addYearEdit->value(),
+                     addTrackUI.addGenreEdit->currentText(),
+                     addTrackUI.addDurationEdit->value(),
                      newFilePath);
 
     // Автосохранение
@@ -102,15 +102,15 @@ void MainWindow::addNewTrack() {
 }
 
 void MainWindow::searchTracks() {
-    QString title = searchTitleEdit->text();
-    QString artist = searchArtistEdit->text();
-    QString album = searchAlbumEdit->text();
-    QString genre = searchGenreEdit->text();
+    QString title = searchUI.searchTitleEdit->text();
+    QString artist = searchUI.searchArtistEdit->text();
+    QString album = searchUI.searchAlbumEdit->text();
+    QString genre = searchUI.searchGenreEdit->text();
 
-    int minYear = searchMinYear->value();
-    int maxYear = searchMaxYear->value();
-    int minDuration = searchMinDuration->value();
-    int maxDuration = searchMaxDuration->value();
+    int minYear = searchUI.searchMinYear->value();
+    int maxYear = searchUI.searchMaxYear->value();
+    int minDuration = searchUI.searchMinDuration->value();
+    int maxDuration = searchUI.searchMaxDuration->value();
 
     // Получаем результаты фильтрации
     TrackSearchParams params;
@@ -136,15 +136,15 @@ void MainWindow::searchTracks() {
 
     QColor highlightColor(255, 255, 180); // мягкая желтая подсветка
 
-    for (int row = 0; row < trackTable->rowCount(); ++row) {
-        QTableWidgetItem *titleItem = trackTable->item(row, 0);
+    for (int row = 0; row < searchUI.trackTable->rowCount(); ++row) {
+        const QTableWidgetItem *titleItem = searchUI.trackTable->item(row, 0);
         if (!titleItem) continue;
         int id = titleItem->data(Qt::UserRole).toInt();
         bool isMatch = resultIds.contains(id);
 
         // Применяем фон ко всем ячейкам строки, кроме виджета действий
         for (int col = 0; col < 6; ++col) {
-            QTableWidgetItem *cell = trackTable->item(row, col);
+            QTableWidgetItem *cell = searchUI.trackTable->item(row, col);
             if (!cell) continue;
             cell->setBackground(isMatch ? QBrush(highlightColor) : QBrush());
         }
@@ -156,7 +156,7 @@ void MainWindow::searchTracks() {
 }
 
 
-void MainWindow::autoSaveCatalog() {
+void MainWindow::autoSaveCatalog() const {
     QString fileName = "catalog_autosave.txt";
     FileManager::saveToTXT(catalog, fileName);
 }
@@ -176,89 +176,91 @@ void MainWindow::onMP3FileSelected() {
                                                     "MP3 Files (*.mp3)");
 
     if (fileName.isEmpty()) {
-        selectedMP3FilePath.clear();
-        if (selectedFileLabel) {
-            selectedFileLabel->setText("Файл не выбран");
-            selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
+        addTrackUI.selectedMP3FilePath.clear();
+        if (addTrackUI.selectedFileLabel) {
+            addTrackUI.selectedFileLabel->setText("Файл не выбран");
+            addTrackUI.selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
         }
         return;
     }
 
-    selectedMP3FilePath = fileName;
+    addTrackUI.selectedMP3FilePath = fileName;
     QString fileBaseName = QFileInfo(fileName).fileName();
 
     // Обновляем метку выбранного файла
-    if (selectedFileLabel) {
-        selectedFileLabel->setText("Выбран: " + fileBaseName);
-        selectedFileLabel->setStyleSheet("color: green; margin: 5px;");
+    if (addTrackUI.selectedFileLabel) {
+        addTrackUI.selectedFileLabel->setText("Выбран: " + fileBaseName);
+        addTrackUI.selectedFileLabel->setStyleSheet("color: green; margin: 5px;");
     }
 
     // Переменные для всех полей
-    QString title, artist;
+    QString title;
+    QString artist;
 
     // Сначала пытаемся парсить имя файла (полный формат: ID.название.исполнитель.альбом.год.жанр.длительность.mp3)
-    QString parsedAlbum, parsedGenre;
+    QString parsedAlbum;
+    QString parsedGenre;
     int parsedYear = 2024;
     int parsedDuration = 180;
 
     if (MP3FileManager::parseFileName(fileBaseName, title, artist, &parsedAlbum, &parsedYear, &parsedGenre, &parsedDuration)) {
-        // Если удалось распарсить имя файла
-        addTitleEdit->setText(title);
-        addArtistEdit->setText(artist);
+        addTrackUI.addTitleEdit->setText(title);
+        addTrackUI.addArtistEdit->setText(artist);
+        fillFormFromParsedFileName(fileBaseName, title, artist, parsedAlbum, parsedYear, parsedGenre, parsedDuration);
+    } else {
+        fillFormFromMP3Metadata(fileName);
+    }
+}
 
-        // Проверяем, есть ли полный формат (7 частей: ID.название.исполнитель.альбом.год.жанр.длительность)
-        QString baseName = QFileInfo(fileBaseName).baseName();
-        if (!baseName.isEmpty() && baseName[0].isDigit()) {
-            QStringList parts = baseName.split('.');
-            if (parts.size() >= 7) {
-                // Полный формат найден - заполняем все поля
+void MainWindow::fillFormFromParsedFileName(const QString& fileBaseName, const QString& title, 
+                                            const QString& artist, const QString& parsedAlbum,
+                                            int parsedYear, const QString& parsedGenre, int parsedDuration) {
+    QString baseName = QFileInfo(fileBaseName).baseName();
+    if (baseName.isEmpty() || !baseName[0].isDigit()) {
+        return;
+    }
+    
+    QStringList parts = baseName.split('.');
+    if (parts.size() < 7) {
+        return;
+    }
+    
+    // Полный формат найден - заполняем все поля
                 if (!parsedAlbum.isEmpty()) {
-                    addAlbumEdit->setText(parsedAlbum);
+                    addTrackUI.addAlbumEdit->setText(parsedAlbum);
                 }
                 if (parsedYear > 1900 && parsedYear < 2100) {
-                    addYearEdit->setValue(parsedYear);
+                    addTrackUI.addYearEdit->setValue(parsedYear);
                 }
                 if (!parsedGenre.isEmpty()) {
-                    // Пытаемся найти жанр в списке
-                    int index = addGenreEdit->findText(parsedGenre, Qt::MatchExactly);
-                    if (index >= 0) {
-                        addGenreEdit->setCurrentIndex(index);
+                    if (int index = addTrackUI.addGenreEdit->findText(parsedGenre, Qt::MatchExactly); index >= 0) {
+                        addTrackUI.addGenreEdit->setCurrentIndex(index);
                     } else {
-                        // Если жанр не найден в списке, оставляем пустой элемент
-                        addGenreEdit->setCurrentIndex(0);
+                        addTrackUI.addGenreEdit->setCurrentIndex(0);
                     }
                 }
                 if (parsedDuration > 0) {
-                    addDurationEdit->setValue(parsedDuration);
+                    addTrackUI.addDurationEdit->setValue(parsedDuration);
                 }
-            } else {
-                // Неполный формат - заполняем только название и исполнителя, остальное ждем ввода
-                // Альбом, год, жанр, длительность остаются для ручного ввода
-            }
-        } else {
-            // Простой формат (название.исполнитель) - заполняем только название и исполнителя
-            // Альбом, год, жанр, длительность остаются для ручного ввода
-        }
-    } else {
-        // Если не удалось распарсить имя файла, пытаемся прочитать метаданные из MP3
-        // Но заполняем ТОЛЬКО название и исполнителя из метаданных
-        QString titleFromMeta, artistFromMeta;
+}
+
+void MainWindow::fillFormFromMP3Metadata(const QString& fileName) {
+    QString titleFromMeta;
+    QString artistFromMeta;
         if (MP3FileManager::readMP3Metadata(fileName, titleFromMeta, artistFromMeta)) {
-            addTitleEdit->setText(titleFromMeta);
-            addArtistEdit->setText(artistFromMeta);
-            // Альбом, год, жанр, длительность НЕ заполняем - остаются для ручного ввода
-        }
+            addTrackUI.addTitleEdit->setText(titleFromMeta);
+            addTrackUI.addArtistEdit->setText(artistFromMeta);
     }
 }
 
 void MainWindow::openTrackFile(int row, int column) {
-    Q_UNUSED(column);
+    Q_UNUSED(column)
     if (row < 0) return;
 
-    QTableWidgetItem *item = trackTable->item(row, 0);
+    const QTableWidgetItem *item = searchUI.trackTable->item(row, 0);
     if (!item) return;
     int trackId = item->data(Qt::UserRole).toInt();
-    Track* track = catalog.findTrackById(trackId);
+    const Track* track = catalog.findTrackById(trackId);
 
     if (!track) return;
     
@@ -294,7 +296,7 @@ void MainWindow::openTrackFile(int row, int column) {
 
 
 void MainWindow::playTrackById(int trackId) {
-    Track* track = catalog.findTrackById(trackId);
+    const Track* track = catalog.findTrackById(trackId);
 
     if (!track) {
         QMessageBox::warning(this, "Ошибка", "Трек не найден");
@@ -332,7 +334,7 @@ void MainWindow::playTrackById(int trackId) {
 }
 
 void MainWindow::editTrackById(int trackId) {
-    Track* track = catalog.findTrackById(trackId);
+    const Track* track = catalog.findTrackById(trackId);
 
     if (!track) {
         QMessageBox::warning(this, "Ошибка", "Трек не найден");
@@ -340,19 +342,18 @@ void MainWindow::editTrackById(int trackId) {
     }
 
     // Заполняем форму редактирования данными трека
-    editTitleEdit->setText(track->getTitle());
-    editArtistEdit->setText(track->getArtist());
-    editAlbumEdit->setText(track->getAlbum());
-    editYearEdit->setValue(track->getYear());
+    editTrackUI.editTitleEdit->setText(track->getTitle());
+    editTrackUI.editArtistEdit->setText(track->getArtist());
+    editTrackUI.editAlbumEdit->setText(track->getAlbum());
+    editTrackUI.editYearEdit->setValue(track->getYear());
     // Пытаемся найти жанр в списке
-    int index = editGenreEdit->findText(track->getGenre(), Qt::MatchExactly);
-    if (index >= 0) {
-        editGenreEdit->setCurrentIndex(index);
+    if (int index = editTrackUI.editGenreEdit->findText(track->getGenre(), Qt::MatchExactly); index >= 0) {
+        editTrackUI.editGenreEdit->setCurrentIndex(index);
     } else {
         // Если жанр не найден в списке, устанавливаем текст (для редактируемого комбобокса)
-        editGenreEdit->setCurrentText(track->getGenre());
+        editTrackUI.editGenreEdit->setCurrentText(track->getGenre());
     }
-    editDurationEdit->setValue(track->getDuration());
+    editTrackUI.editDurationEdit->setValue(track->getDuration());
 
     currentTrackId = trackId;
     stackedWidget->setCurrentIndex(2); // Экран редактирования
@@ -375,14 +376,14 @@ void MainWindow::deleteTrackById(int trackId) {
 }
 
 void MainWindow::resetSearch() {
-    searchTitleEdit->clear();
-    searchArtistEdit->clear();
-    searchAlbumEdit->clear();
-    searchGenreEdit->clear();
-    searchMinYear->setValue(1900);
-    searchMaxYear->setValue(2100);
-    searchMinDuration->setValue(1);
-    searchMaxDuration->setValue(3600);
+    searchUI.searchTitleEdit->clear();
+    searchUI.searchArtistEdit->clear();
+    searchUI.searchAlbumEdit->clear();
+    searchUI.searchGenreEdit->clear();
+    searchUI.searchMinYear->setValue(1900);
+    searchUI.searchMaxYear->setValue(2100);
+    searchUI.searchMinDuration->setValue(1);
+    searchUI.searchMaxDuration->setValue(3600);
 }
 
 
@@ -397,10 +398,10 @@ void MainWindow::updateTrackTable(const QList<Track>& tracksToDisplay) {
 
 void MainWindow::populateTrackTable(const QList<Track>& tracks) {
     // Временно отключаем сортировку при заполнении таблицы
-    bool sortingWasEnabled = trackTable->isSortingEnabled();
-    trackTable->setSortingEnabled(false);
+    bool sortingWasEnabled = searchUI.trackTable->isSortingEnabled();
+    searchUI.trackTable->setSortingEnabled(false);
 
-    trackTable->setRowCount(tracks.size());
+    searchUI.trackTable->setRowCount(tracks.size());
 
     for (int i = 0; i < tracks.size(); ++i) {
         const Track& track = tracks[i];
@@ -408,31 +409,31 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
         // Сохраняем trackId в данных первого столбца (название)
         QTableWidgetItem *titleItem = new QTableWidgetItem(track.getTitle());
         titleItem->setData(Qt::UserRole, track.getId());
-        trackTable->setItem(i, 0, titleItem);
+        searchUI.trackTable->setItem(i, 0, titleItem);
 
-        trackTable->setItem(i, 1, new QTableWidgetItem(track.getArtist()));
-        trackTable->setItem(i, 2, new QTableWidgetItem(track.getAlbum()));
-        trackTable->setItem(i, 3, new QTableWidgetItem(QString::number(track.getYear())));
-        trackTable->setItem(i, 4, new QTableWidgetItem(track.getGenre()));
-        trackTable->setItem(i, 5, new QTableWidgetItem(track.getFormattedDuration()));
+        searchUI.trackTable->setItem(i, 1, new QTableWidgetItem(track.getArtist()));
+        searchUI.trackTable->setItem(i, 2, new QTableWidgetItem(track.getAlbum()));
+        searchUI.trackTable->setItem(i, 3, new QTableWidgetItem(QString::number(track.getYear())));
+        searchUI.trackTable->setItem(i, 4, new QTableWidgetItem(track.getGenre()));
+        searchUI.trackTable->setItem(i, 5, new QTableWidgetItem(track.getFormattedDuration()));
 
         // Создаем виджет с кнопками для столбца действий
-        QWidget *actionWidget = new QWidget();
-        QHBoxLayout *actionLayout = new QHBoxLayout(actionWidget);
+        auto *actionWidget = new QWidget();
+        auto *actionLayout = new QHBoxLayout(actionWidget);
         actionLayout->setContentsMargins(3, 2, 3, 2);
         actionLayout->setSpacing(5);
 
-        QPushButton *playButton = new QPushButton("▶");
+        auto *playButton = new QPushButton("▶");
         playButton->setToolTip("Проиграть");
         playButton->setFixedSize(28, 24);
         playButton->setStyleSheet("QPushButton { font-size: 12px; }");
 
-        QPushButton *editButton = new QPushButton("✎");
+        auto *editButton = new QPushButton("✎");
         editButton->setToolTip("Редактировать");
         editButton->setFixedSize(28, 24);
         editButton->setStyleSheet("QPushButton { font-size: 12px; }");
 
-        QPushButton *deleteButton = new QPushButton("✗");
+        auto *deleteButton = new QPushButton("✗");
         deleteButton->setToolTip("Удалить");
         deleteButton->setFixedSize(28, 24);
         deleteButton->setStyleSheet("QPushButton { font-size: 12px; color: red; }");
@@ -444,7 +445,7 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
         actionLayout->setAlignment(Qt::AlignCenter);
 
         actionWidget->setLayout(actionLayout);
-        trackTable->setCellWidget(i, 6, actionWidget);
+        searchUI.trackTable->setCellWidget(i, 6, actionWidget);
 
         // Сохраняем trackId для использования в лямбдах (чтобы избежать проблем при сортировке)
         int trackId = track.getId();
@@ -464,14 +465,14 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
     }
 
     // Включаем сортировку обратно, если она была включена
-    trackTable->setSortingEnabled(sortingWasEnabled);
+    searchUI.trackTable->setSortingEnabled(sortingWasEnabled);
 }
 
 QStringList MainWindow::getGenreList() const {
     return GenreManager::getGenreList();
 }
 
-void MainWindow::populateGenreComboBox(QComboBox *comboBox) {
+void MainWindow::populateGenreComboBox(QComboBox *comboBox) const {
     if (!comboBox) return;
     comboBox->clear();
     comboBox->addItem(""); // Пустой элемент для сброса
@@ -480,46 +481,46 @@ void MainWindow::populateGenreComboBox(QComboBox *comboBox) {
 }
 
 void MainWindow::clearAddTrackForm() {
-    addTitleEdit->clear();
-    addArtistEdit->clear();
-    addAlbumEdit->clear();
-    addYearEdit->setValue(2024);
-    addGenreEdit->setCurrentIndex(0); // Сбрасываем на первый элемент
-    addDurationEdit->setValue(180);
-    selectedMP3FilePath.clear();
-    if (selectedFileLabel) {
-        selectedFileLabel->setText("Файл не выбран");
-        selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
+    addTrackUI.addTitleEdit->clear();
+    addTrackUI.addArtistEdit->clear();
+    addTrackUI.addAlbumEdit->clear();
+    addTrackUI.addYearEdit->setValue(2024);
+    addTrackUI.addGenreEdit->setCurrentIndex(0); // Сбрасываем на первый элемент
+    addTrackUI.addDurationEdit->setValue(180);
+    addTrackUI.selectedMP3FilePath.clear();
+    if (addTrackUI.selectedFileLabel) {
+        addTrackUI.selectedFileLabel->setText("Файл не выбран");
+        addTrackUI.selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
     }
 }
 
 QWidget* MainWindow::createMainCatalogScreen() {
-    QWidget *catalogWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(catalogWidget);
+    auto *catalogWidget = new QWidget;
+    auto *layout = new QVBoxLayout(catalogWidget);
 
     // Заголовок
-    QLabel *titleLabel = new QLabel("Музыкальный каталог");
+    auto *titleLabel = new QLabel("Музыкальный каталог");
     titleLabel->setStyleSheet("font-size: 24px; font-weight: bold; margin: 10px;");
     titleLabel->setAlignment(Qt::AlignCenter);
 
     // Таблица треков
-    trackTable = new QTableWidget;
-    trackTable->setColumnCount(7);
-    trackTable->setHorizontalHeaderLabels({"Название", "Исполнитель", "Альбом", "Год", "Жанр", "Длительность", "Действия"});
-    trackTable->horizontalHeader()->setStretchLastSection(false);
-    trackTable->setColumnWidth(6, 120); // Ширина столбца с кнопками
-    trackTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    trackTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    trackTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    trackTable->setSortingEnabled(true);
-    trackTable->horizontalHeader()->setSortIndicatorShown(true);
-    trackTable->horizontalHeader()->setSectionsClickable(true);
-    trackTable->horizontalHeader()->setSortIndicator(0, Qt::AscendingOrder);
+    searchUI.trackTable = new QTableWidget;
+    searchUI.trackTable->setColumnCount(7);
+    searchUI.trackTable->setHorizontalHeaderLabels({"Название", "Исполнитель", "Альбом", "Год", "Жанр", "Длительность", "Действия"});
+    searchUI.trackTable->horizontalHeader()->setStretchLastSection(false);
+    searchUI.trackTable->setColumnWidth(6, 120); // Ширина столбца с кнопками
+    searchUI.trackTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    searchUI.trackTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    searchUI.trackTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    searchUI.trackTable->setSortingEnabled(true);
+    searchUI.trackTable->horizontalHeader()->setSortIndicatorShown(true);
+    searchUI.trackTable->horizontalHeader()->setSectionsClickable(true);
+    searchUI.trackTable->horizontalHeader()->setSortIndicator(0, Qt::AscendingOrder);
 
     // Панель управления
-    QHBoxLayout *controlLayout = new QHBoxLayout;
-    QPushButton *addButton = new QPushButton("Добавить трек");
-    QPushButton *yandexSearchButton = new QPushButton("Поиск в Яндекс Музыке");
+    auto *controlLayout = new QHBoxLayout;
+    auto *addButton = new QPushButton("Добавить трек");
+    auto *yandexSearchButton = new QPushButton("Поиск в Яндекс Музыке");
 
     controlLayout->addWidget(addButton);
     controlLayout->addWidget(yandexSearchButton);
@@ -529,55 +530,55 @@ QWidget* MainWindow::createMainCatalogScreen() {
     layout->addLayout(controlLayout);
 
     // Правая панель фильтров (вместо отдельной кнопки/экрана)
-    QWidget *filtersPanel = new QWidget;
+    auto *filtersPanel = new QWidget;
     filtersPanel->setMinimumWidth(260);
-    QVBoxLayout *filtersLayout = new QVBoxLayout(filtersPanel);
+    auto *filtersLayout = new QVBoxLayout(filtersPanel);
 
-    QLabel *filtersTitle = new QLabel("Фильтры");
+    auto *filtersTitle = new QLabel("Фильтры");
     filtersTitle->setStyleSheet("font-size: 16px; font-weight: bold;");
 
-    QFormLayout *filterForm = new QFormLayout;
-    searchTitleEdit = new QLineEdit;
-    searchArtistEdit = new QLineEdit;
-    searchAlbumEdit = new QLineEdit;
-    searchGenreEdit = new QLineEdit;
-    searchMinYear = new QSpinBox;
-    searchMinYear->setRange(1900, 2100);
-    searchMinYear->setSpecialValueText("Любой");
-    searchMaxYear = new QSpinBox;
-    searchMaxYear->setRange(1900, 2100);
-    searchMaxYear->setSpecialValueText("Любой");
-    searchMinDuration = new QSpinBox;
-    searchMinDuration->setRange(1, 3600);
-    searchMinDuration->setSpecialValueText("Любая");
-    searchMinDuration->setSuffix(" сек");
-    searchMaxDuration = new QSpinBox;
-    searchMaxDuration->setRange(1, 3600);
-    searchMaxDuration->setSpecialValueText("Любая");
-    searchMaxDuration->setSuffix(" сек");
+    auto *filterForm = new QFormLayout;
+    searchUI.searchTitleEdit = new QLineEdit;
+    searchUI.searchArtistEdit = new QLineEdit;
+    searchUI.searchAlbumEdit = new QLineEdit;
+    searchUI.searchGenreEdit = new QLineEdit;
+    searchUI.searchMinYear = new QSpinBox;
+    searchUI.searchMinYear->setRange(1900, 2100);
+    searchUI.searchMinYear->setSpecialValueText("Любой");
+    searchUI.searchMaxYear = new QSpinBox;
+    searchUI.searchMaxYear->setRange(1900, 2100);
+    searchUI.searchMaxYear->setSpecialValueText("Любой");
+    searchUI.searchMinDuration = new QSpinBox;
+    searchUI.searchMinDuration->setRange(1, 3600);
+    searchUI.searchMinDuration->setSpecialValueText("Любая");
+    searchUI.searchMinDuration->setSuffix(" сек");
+    searchUI.searchMaxDuration = new QSpinBox;
+    searchUI.searchMaxDuration->setRange(1, 3600);
+    searchUI.searchMaxDuration->setSpecialValueText("Любая");
+    searchUI.searchMaxDuration->setSuffix(" сек");
 
     // Инициализация значений по умолчанию, чтобы поиск сразу работал корректно
-    searchTitleEdit->clear();
-    searchArtistEdit->clear();
-    searchAlbumEdit->clear();
-    searchGenreEdit->clear();
-    searchMinYear->setValue(1900);
-    searchMaxYear->setValue(2100);
-    searchMinDuration->setValue(1);
-    searchMaxDuration->setValue(3600);
+    searchUI.searchTitleEdit->clear();
+    searchUI.searchArtistEdit->clear();
+    searchUI.searchAlbumEdit->clear();
+    searchUI.searchGenreEdit->clear();
+    searchUI.searchMinYear->setValue(1900);
+    searchUI.searchMaxYear->setValue(2100);
+    searchUI.searchMinDuration->setValue(1);
+    searchUI.searchMaxDuration->setValue(3600);
 
-    filterForm->addRow("Название:", searchTitleEdit);
-    filterForm->addRow("Исполнитель:", searchArtistEdit);
-    filterForm->addRow("Альбом:", searchAlbumEdit);
-    filterForm->addRow("Жанр:", searchGenreEdit);
-    filterForm->addRow("Год от:", searchMinYear);
-    filterForm->addRow("Год до:", searchMaxYear);
-    filterForm->addRow("Длительность от:", searchMinDuration);
-    filterForm->addRow("Длительность до:", searchMaxDuration);
+    filterForm->addRow("Название:", searchUI.searchTitleEdit);
+    filterForm->addRow("Исполнитель:", searchUI.searchArtistEdit);
+    filterForm->addRow("Альбом:", searchUI.searchAlbumEdit);
+    filterForm->addRow("Жанр:", searchUI.searchGenreEdit);
+    filterForm->addRow("Год от:", searchUI.searchMinYear);
+    filterForm->addRow("Год до:", searchUI.searchMaxYear);
+    filterForm->addRow("Длительность от:", searchUI.searchMinDuration);
+    filterForm->addRow("Длительность до:", searchUI.searchMaxDuration);
 
-    QHBoxLayout *filterButtons = new QHBoxLayout;
-    QPushButton *applyFiltersBtn = new QPushButton("Поиск");
-    QPushButton *resetFiltersBtn = new QPushButton("Сброс");
+    auto *filterButtons = new QHBoxLayout;
+    auto *applyFiltersBtn = new QPushButton("Поиск");
+    auto *resetFiltersBtn = new QPushButton("Сброс");
     filterButtons->addWidget(applyFiltersBtn);
     filterButtons->addWidget(resetFiltersBtn);
     filterButtons->addStretch();
@@ -588,8 +589,8 @@ QWidget* MainWindow::createMainCatalogScreen() {
     filtersLayout->addStretch();
 
     // Область содержимого: таблица + панель фильтров
-    QHBoxLayout *contentLayout = new QHBoxLayout;
-    contentLayout->addWidget(trackTable, /*stretch*/ 1);
+    auto *contentLayout = new QHBoxLayout;
+    contentLayout->addWidget(searchUI.trackTable, /*stretch*/ 1);
     contentLayout->addWidget(filtersPanel);
     layout->addLayout(contentLayout);
 
@@ -601,61 +602,61 @@ QWidget* MainWindow::createMainCatalogScreen() {
         resetSearch();
         updateTrackTable();
     });
-    connect(trackTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::openTrackFile);
+    connect(searchUI.trackTable, &QTableWidget::cellDoubleClicked, this, &MainWindow::openTrackFile);
     // Сортировка по клику по заголовку работает автоматически при setSortingEnabled(true)
 
     return catalogWidget;
 }
 
 QWidget* MainWindow::createAddTrackScreen() {
-    QWidget *addWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(addWidget);
+    auto *addWidget = new QWidget;
+    auto *layout = new QVBoxLayout(addWidget);
 
-    QLabel *titleLabel = new QLabel("Добавление нового трека");
+    auto *titleLabel = new QLabel("Добавление нового трека");
     titleLabel->setStyleSheet("font-size: 20px; font-weight: bold; margin: 10px;");
 
     // Кнопка выбора файла
-    QPushButton *selectFileButton = new QPushButton("Выбрать MP3 файл");
+    auto *selectFileButton = new QPushButton("Выбрать MP3 файл");
     selectFileButton->setStyleSheet("QPushButton { padding: 10px; font-size: 14px; }");
     connect(selectFileButton, &QPushButton::clicked, this, &MainWindow::onMP3FileSelected);
 
     // Метка для отображения выбранного файла
-    selectedFileLabel = new QLabel("Файл не выбран");
-    selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
+    addTrackUI.selectedFileLabel = new QLabel("Файл не выбран");
+    addTrackUI.selectedFileLabel->setStyleSheet("color: gray; margin: 5px;");
 
-    QFormLayout *formLayout = new QFormLayout;
+    auto *formLayout = new QFormLayout;
 
-    addTitleEdit = new QLineEdit;
-    addTitleEdit->setReadOnly(false);
-    addArtistEdit = new QLineEdit;
-    addArtistEdit->setReadOnly(false);
-    addAlbumEdit = new QLineEdit;
-    addYearEdit = new QSpinBox;
-    addYearEdit->setRange(1900, 2100);
-    addYearEdit->setValue(2024);
-    addGenreEdit = new QComboBox;
-    populateGenreComboBox(addGenreEdit);
-    addDurationEdit = new QSpinBox;
-    addDurationEdit->setRange(1, 3600);
-    addDurationEdit->setSuffix(" сек");
+    addTrackUI.addTitleEdit = new QLineEdit;
+    addTrackUI.addTitleEdit->setReadOnly(false);
+    addTrackUI.addArtistEdit = new QLineEdit;
+    addTrackUI.addArtistEdit->setReadOnly(false);
+    addTrackUI.addAlbumEdit = new QLineEdit;
+    addTrackUI.addYearEdit = new QSpinBox;
+    addTrackUI.addYearEdit->setRange(1900, 2100);
+    addTrackUI.addYearEdit->setValue(2024);
+    addTrackUI.addGenreEdit = new QComboBox;
+    populateGenreComboBox(addTrackUI.addGenreEdit);
+    addTrackUI.addDurationEdit = new QSpinBox;
+    addTrackUI.addDurationEdit->setRange(1, 3600);
+    addTrackUI.addDurationEdit->setSuffix(" сек");
 
-    formLayout->addRow("Название *:", addTitleEdit);
-    formLayout->addRow("Исполнитель *:", addArtistEdit);
-    formLayout->addRow("Альбом:", addAlbumEdit);
-    formLayout->addRow("Год:", addYearEdit);
-    formLayout->addRow("Жанр:", addGenreEdit);
-    formLayout->addRow("Длительность:", addDurationEdit);
+    formLayout->addRow("Название *:", addTrackUI.addTitleEdit);
+    formLayout->addRow("Исполнитель *:", addTrackUI.addArtistEdit);
+    formLayout->addRow("Альбом:", addTrackUI.addAlbumEdit);
+    formLayout->addRow("Год:", addTrackUI.addYearEdit);
+    formLayout->addRow("Жанр:", addTrackUI.addGenreEdit);
+    formLayout->addRow("Длительность:", addTrackUI.addDurationEdit);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *saveButton = new QPushButton("Сохранить");
-    QPushButton *cancelButton = new QPushButton("Назад");
+    auto *buttonLayout = new QHBoxLayout;
+    auto *saveButton = new QPushButton("Сохранить");
+    auto *cancelButton = new QPushButton("Назад");
 
     buttonLayout->addWidget(saveButton);
     buttonLayout->addWidget(cancelButton);
 
     layout->addWidget(titleLabel);
     layout->addWidget(selectFileButton);
-    layout->addWidget(selectedFileLabel);
+    layout->addWidget(addTrackUI.selectedFileLabel);
     layout->addLayout(formLayout);
     layout->addLayout(buttonLayout);
     layout->addStretch();
@@ -667,35 +668,35 @@ QWidget* MainWindow::createAddTrackScreen() {
 }
 
 QWidget* MainWindow::createEditTrackScreen() {
-    QWidget *editWidget = new QWidget;
-    QVBoxLayout *layout = new QVBoxLayout(editWidget);
+    auto *editWidget = new QWidget;
+    auto *layout = new QVBoxLayout(editWidget);
 
-    QLabel *titleLabel = new QLabel("Редактирование трека");
+    auto *titleLabel = new QLabel("Редактирование трека");
     titleLabel->setStyleSheet("font-size: 20px; font-weight: bold; margin: 10px;");
 
-    QFormLayout *formLayout = new QFormLayout;
+    auto *formLayout = new QFormLayout;
 
-    editTitleEdit = new QLineEdit;
-    editArtistEdit = new QLineEdit;
-    editAlbumEdit = new QLineEdit;
-    editYearEdit = new QSpinBox;
-    editYearEdit->setRange(1900, 2100);
-    editGenreEdit = new QComboBox;
-    populateGenreComboBox(editGenreEdit);
-    editDurationEdit = new QSpinBox;
-    editDurationEdit->setRange(1, 3600);
-    editDurationEdit->setSuffix(" сек");
+    editTrackUI.editTitleEdit = new QLineEdit;
+    editTrackUI.editArtistEdit = new QLineEdit;
+    editTrackUI.editAlbumEdit = new QLineEdit;
+    editTrackUI.editYearEdit = new QSpinBox;
+    editTrackUI.editYearEdit->setRange(1900, 2100);
+    editTrackUI.editGenreEdit = new QComboBox;
+    populateGenreComboBox(editTrackUI.editGenreEdit);
+    editTrackUI.editDurationEdit = new QSpinBox;
+    editTrackUI.editDurationEdit->setRange(1, 3600);
+    editTrackUI.editDurationEdit->setSuffix(" сек");
 
-    formLayout->addRow("Название *:", editTitleEdit);
-    formLayout->addRow("Исполнитель *:", editArtistEdit);
-    formLayout->addRow("Альбом:", editAlbumEdit);
-    formLayout->addRow("Год:", editYearEdit);
-    formLayout->addRow("Жанр:", editGenreEdit);
-    formLayout->addRow("Длительность:", editDurationEdit);
+    formLayout->addRow("Название *:", editTrackUI.editTitleEdit);
+    formLayout->addRow("Исполнитель *:", editTrackUI.editArtistEdit);
+    formLayout->addRow("Альбом:", editTrackUI.editAlbumEdit);
+    formLayout->addRow("Год:", editTrackUI.editYearEdit);
+    formLayout->addRow("Жанр:", editTrackUI.editGenreEdit);
+    formLayout->addRow("Длительность:", editTrackUI.editDurationEdit);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *saveButton = new QPushButton("Сохранить изменения");
-    QPushButton *cancelButton = new QPushButton("Отмена");
+    auto *buttonLayout = new QHBoxLayout;
+    auto *saveButton = new QPushButton("Сохранить изменения");
+    auto *cancelButton = new QPushButton("Отмена");
 
     buttonLayout->addWidget(saveButton);
     buttonLayout->addWidget(cancelButton);
@@ -706,19 +707,19 @@ QWidget* MainWindow::createEditTrackScreen() {
     layout->addStretch();
 
     connect(saveButton, &QPushButton::clicked, [this]() {
-        if (editTitleEdit->text().isEmpty() || editArtistEdit->text().isEmpty()) {
+        if (editTrackUI.editTitleEdit->text().isEmpty() || editTrackUI.editArtistEdit->text().isEmpty()) {
             QMessageBox::warning(this, "Ошибка", "Заполните обязательные поля (Название и Исполнитель)");
             return;
         }
 
         // Создаем обновленный трек
         Track updatedTrack(currentTrackId,
-                           editTitleEdit->text(),
-                           editArtistEdit->text(),
-                           editAlbumEdit->text(),
-                           editYearEdit->value(),
-                           editGenreEdit->currentText(),
-                           editDurationEdit->value());
+                           editTrackUI.editTitleEdit->text(),
+                           editTrackUI.editArtistEdit->text(),
+                           editTrackUI.editAlbumEdit->text(),
+                           editTrackUI.editYearEdit->value(),
+                           editTrackUI.editGenreEdit->currentText(),
+                           editTrackUI.editDurationEdit->value());
 
         // Обновляем в каталоге
         if (catalog.updateTrack(currentTrackId, updatedTrack)) {
@@ -738,66 +739,66 @@ QWidget* MainWindow::createEditTrackScreen() {
 void MainWindow::searchYandexMusic()
 {
     // Создаем диалог для поиска
-    if (!yandexSearchDialog) {
-        yandexSearchDialog = new QDialog(this);
-        yandexSearchDialog->setWindowTitle("Поиск в Яндекс Музыке");
-        yandexSearchDialog->setMinimumSize(600, 500);
+    if (!yandexUI.searchDialog) {
+        yandexUI.searchDialog = new QDialog(this);
+        yandexUI.searchDialog->setWindowTitle("Поиск в Яндекс Музыке");
+        yandexUI.searchDialog->setMinimumSize(600, 500);
         
-        QVBoxLayout *dialogLayout = new QVBoxLayout(yandexSearchDialog);
+        auto *dialogLayout = new QVBoxLayout(yandexUI.searchDialog);
         
         // Поле поиска
-        QHBoxLayout *searchLayout = new QHBoxLayout;
-        yandexSearchEdit = new QLineEdit;
-        yandexSearchEdit->setPlaceholderText("Введите название трека или исполнителя...");
-        QPushButton *searchBtn = new QPushButton("Поиск");
-        searchLayout->addWidget(yandexSearchEdit);
+        auto *searchLayout = new QHBoxLayout;
+        yandexUI.searchEdit = new QLineEdit;
+        yandexUI.searchEdit->setPlaceholderText("Введите название трека или исполнителя...");
+        auto *searchBtn = new QPushButton("Поиск");
+        searchLayout->addWidget(yandexUI.searchEdit);
         searchLayout->addWidget(searchBtn);
         
         // Список результатов
-        yandexResultsList = new QListWidget;
-        yandexResultsList->setSelectionMode(QAbstractItemView::ExtendedSelection);
+        yandexUI.resultsList = new QListWidget;
+        yandexUI.resultsList->setSelectionMode(QAbstractItemView::ExtendedSelection);
         
         // Кнопки
-        QHBoxLayout *buttonLayout = new QHBoxLayout;
-        QPushButton *importBtn = new QPushButton("Импортировать выбранные");
-        QPushButton *closeBtn = new QPushButton("Закрыть");
+        auto *buttonLayout = new QHBoxLayout;
+        auto *importBtn = new QPushButton("Импортировать выбранные");
+        auto *closeBtn = new QPushButton("Закрыть");
         buttonLayout->addWidget(importBtn);
         buttonLayout->addStretch();
         buttonLayout->addWidget(closeBtn);
         
         dialogLayout->addLayout(searchLayout);
-        dialogLayout->addWidget(yandexResultsList);
+        dialogLayout->addWidget(yandexUI.resultsList);
         dialogLayout->addLayout(buttonLayout);
         
         connect(searchBtn, &QPushButton::clicked, [this]() {
-            QString query = yandexSearchEdit->text().trimmed();
+            QString query = yandexUI.searchEdit->text().trimmed();
             if (!query.isEmpty()) {
-                yandexResultsList->clear();
-                yandexResultsList->addItem("Поиск...");
-                yandexIntegrator->searchAndImportTracks(query);
+                yandexUI.resultsList->clear();
+                yandexUI.resultsList->addItem("Поиск...");
+                yandexUI.integrator->searchAndImportTracks(query);
             }
         });
         
         connect(importBtn, &QPushButton::clicked, this, &MainWindow::importSelectedYandexTracks);
-        connect(closeBtn, &QPushButton::clicked, yandexSearchDialog, &QDialog::accept);
+        connect(closeBtn, &QPushButton::clicked, yandexUI.searchDialog, &QDialog::accept);
         
         // Поиск по Enter
-        connect(yandexSearchEdit, &QLineEdit::returnPressed, searchBtn, &QPushButton::click);
+        connect(yandexUI.searchEdit, &QLineEdit::returnPressed, searchBtn, &QPushButton::click);
     }
     
-    yandexSearchEdit->clear();
-    yandexResultsList->clear();
-    currentYandexTracks.clear();
-    yandexSearchDialog->exec();
+    yandexUI.searchEdit->clear();
+    yandexUI.resultsList->clear();
+    yandexUI.currentTracks.clear();
+    yandexUI.searchDialog->exec();
 }
 
 void MainWindow::onYandexTracksFound(const QList<YandexTrack>& tracks)
 {
-    currentYandexTracks = tracks;
-    yandexResultsList->clear();
+    yandexUI.currentTracks = tracks;
+    yandexUI.resultsList->clear();
     
     if (tracks.isEmpty()) {
-        yandexResultsList->addItem("Треки не найдены");
+        yandexUI.resultsList->addItem("Треки не найдены");
         return;
     }
     
@@ -822,11 +823,11 @@ void MainWindow::onYandexTracksFound(const QList<YandexTrack>& tracks)
                         .arg(seconds, 2, 10, QChar('0'));
         }
         
-        yandexResultsList->addItem(itemText);
+        yandexUI.resultsList->addItem(itemText);
     }
 }
 
-void MainWindow::onYandexTrackImported(const QString& trackTitle)
+void MainWindow::onYandexTrackImported(const QString& [[maybe_unused]] trackTitle)
 {
     // Обновляем таблицу после импорта
     updateTrackTable();
@@ -835,15 +836,15 @@ void MainWindow::onYandexTrackImported(const QString& trackTitle)
 void MainWindow::onYandexError(const QString& errorMessage)
 {
     QMessageBox::warning(this, "Ошибка Яндекс Музыки", errorMessage);
-    if (yandexResultsList) {
-        yandexResultsList->clear();
-        yandexResultsList->addItem("Ошибка: " + errorMessage);
+    if (yandexUI.resultsList) {
+        yandexUI.resultsList->clear();
+        yandexUI.resultsList->addItem("Ошибка: " + errorMessage);
     }
 }
 
 void MainWindow::importSelectedYandexTracks()
 {
-    QList<QListWidgetItem*> selectedItems = yandexResultsList->selectedItems();
+    QList<QListWidgetItem*> selectedItems = yandexUI.resultsList->selectedItems();
     
     if (selectedItems.isEmpty()) {
         QMessageBox::information(this, "Информация", "Выберите треки для импорта");
@@ -852,10 +853,10 @@ void MainWindow::importSelectedYandexTracks()
     
     int importedCount = 0;
     
-    for (QListWidgetItem* item : selectedItems) {
-        int index = yandexResultsList->row(item);
-        if (index >= 0 && index < currentYandexTracks.size()) {
-            yandexIntegrator->importTrack(currentYandexTracks[index]);
+    for (const QListWidgetItem* item : selectedItems) {
+        int index = yandexUI.resultsList->row(item);
+        if (index >= 0 && index < yandexUI.currentTracks.size()) {
+            yandexUI.integrator->importTrack(yandexUI.currentTracks[index]);
             importedCount++;
         }
     }
