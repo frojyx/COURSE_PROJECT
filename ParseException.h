@@ -10,12 +10,12 @@ public:
     explicit ParseException(const QString& message);
     explicit ParseException(const QString& data, const QString& expectedFormat);
     explicit ParseException(int lineNumber, const QString& error);
-    virtual ~ParseException() noexcept = default;
+    ~ParseException() noexcept override = default;
     
     int getLineNumber() const { return lineNumber; }
 
-protected:
-    int lineNumber;
+private:
+    int lineNumber = -1;
 };
 
 #endif // PARSEEXCEPTION_H

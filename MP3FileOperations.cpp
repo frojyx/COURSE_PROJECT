@@ -36,7 +36,7 @@ bool MP3FileOperations::renameFile(const QString& oldPath, const QString& newFil
     QString newPath = fileInfo.absolutePath() + "/" + newFileName;
 
     QFile file(oldPath);
-    if (file.exists(newPath)) {
+    if (QFile::exists(newPath)) {
         // Если файл с таким именем уже существует, удаляем его
         QFile::remove(newPath);
     }

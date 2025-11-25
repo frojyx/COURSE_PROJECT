@@ -6,6 +6,7 @@
 #include "TrackRepository.h"
 #include "TrackSearcher.h"
 #include "TrackSorter.h"
+#include "TrackSearchParams.h"
 #include <QList>
 #include <QString>
 
@@ -18,8 +19,7 @@ public:
                   const QString& album, int year, const QString& genre, int duration);
     void addTrack(const QString& title, const QString& artist,
                   const QString& album, int year, const QString& genre, int duration, const QString& filePath);
-    void addTrackWithId(int id, const QString& title, const QString& artist,
-                        const QString& album, int year, const QString& genre, int duration, const QString& filePath);
+    void addTrackWithId(int id, const TrackAddParams& params);
     bool removeTrack(int id);
     bool updateTrack(int id, const Track& updatedTrack);
 
@@ -33,10 +33,7 @@ public:
     QList<Track> findTracksByGenre(const QString& genre) const;
     QList<Track> findTracksByYearRange(int startYear, int endYear) const;
     QList<Track> searchTracks(const QString& searchTerm) const;
-    QList<Track> searchTracksWithFilters(const QString& title, const QString& artist,
-                                         const QString& album, const QString& genre,
-                                         int minYear, int maxYear,
-                                         int minDuration, int maxDuration) const;
+    QList<Track> searchTracksWithFilters(const TrackSearchParams& params) const;
 
     // Сортировка
     void sortByTitle(bool ascending = true);

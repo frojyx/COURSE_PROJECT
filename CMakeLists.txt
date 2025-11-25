@@ -30,6 +30,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         SearchResultsWindow.h SearchResultsWindow.cpp
         TrackRepository.h TrackRepository.cpp
         TrackSearcher.h TrackSearcher.cpp
+        TrackSearchParams.h
         TrackSorter.h TrackSorter.cpp
         MP3MetadataReader.h MP3MetadataReader.cpp
         MP3FileNameParser.h MP3FileNameParser.cpp

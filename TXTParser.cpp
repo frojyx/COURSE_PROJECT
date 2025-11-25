@@ -6,7 +6,7 @@ const QString TXTParser::FIELD_SEPARATOR = "|||";
 QString TXTParser::escapeField(const QString& field) {
     QString escaped = field;
     // Сначала экранируем обратный слэш (чтобы не экранировать уже экранированные символы)
-    escaped.replace("\\", "\\\\");
+    escaped.replace(R"(\)", R"(\\)");
     // Затем экранируем переводы строк
     escaped.replace("\n", "\\n");
     escaped.replace("\r", "\\r");
@@ -15,58 +15,65 @@ QString TXTParser::escapeField(const QString& field) {
     return escaped;
 }
 
+namespace {
+    bool isSeparatorAt(const QString& line, int pos) {
+        const int lineLen = line.length();
+        return pos < lineLen && line[pos] == '|' &&
+               pos + 1 < lineLen && line[pos + 1] == '|' &&
+               pos + 2 < lineLen && line[pos + 2] == '|';
+    }
+    
+    void handleEscapedChar(QChar c, QString& field, int& i, const QString& line) {
+        if (c == '|' && isSeparatorAt(line, i)) {
+            field += "|||";
+            i += 2;
+        } else if (c == 'n') {
+            field += '\n';
+        } else if (c == 'r') {
+            field += '\r';
+        } else if (c == '\\') {
+            field += '\\';
+        } else {
+            field += '\\';
+            field += c;
+        }
+    }
+}
+
 QStringList TXTParser::parseLine(const QString& line) {
     QStringList fields;
     QString field;
     bool escapeNext = false;
 
     // Парсинг TXT с учетом экранирования
-    for (int i = 0; i < line.length(); ++i) {
+    const int lineLen = line.length();
+    for (int i = 0; i < lineLen; ++i) {
         QChar c = line[i];
         
         if (escapeNext) {
-            // Обрабатываем экранированный символ
-            if (c == '|') {
-                // Проверяем, не является ли это экранированным разделителем |||
-                if (i + 1 < line.length() && line[i + 1] == '|' && i + 2 < line.length() && line[i + 2] == '|') {
-                    // Это экранированный разделитель |||
-                    field += "|||";
-                    i += 2; // Пропускаем следующие две |
-                } else {
-                    field += '|';
-                }
-            } else if (c == 'n') {
-                field += '\n';
-            } else if (c == 'r') {
-                field += '\r';
-            } else if (c == '\\') {
-                field += '\\';
-            } else {
-                // Неизвестный экранированный символ - добавляем как есть
-                field += '\\';
-                field += c;
-            }
+            handleEscapedChar(c, field, i, line);
             escapeNext = false;
-        } else if (c == '\\') {
+            continue;
+        }
+        
+        if (c == '\\') {
             escapeNext = true;
+            continue;
+        }
+        
+        if (isSeparatorAt(line, i)) {
+            fields.append(field);
+            field.clear();
+            i += 2;
         } else {
-            // Проверяем, не является ли это разделителем
-            if (c == '|' && i + 1 < line.length() && line[i + 1] == '|' && i + 2 < line.length() && line[i + 2] == '|') {
-                // Найден разделитель |||
-                fields.append(field);
-                field.clear();
-                i += 2; // Пропускаем следующие две |
-            } else {
-                field.append(c);
-            }
+            field.append(c);
         }
     }
     
-    // Если строка закончилась на экранирующий символ
     if (escapeNext) {
         field += '\\';
     }
-    fields.append(field); // Добавляем последнее поле
+    fields.append(field);
 
     return fields;
 }

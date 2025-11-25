@@ -15,7 +15,7 @@ public:
     const char* what() const noexcept override;
     QString getMessage() const;
 
-protected:
+private:
     QString errorMessage;
 };
 

@@ -7,7 +7,7 @@
 
 class MP3FileFinder {
 public:
-    MP3FileFinder(const QString& musicPath = "D:/music");
+    explicit MP3FileFinder(const QString& musicPath = "D:/music");
 
     // Получить список MP3 файлов
     QList<QFileInfo> getMP3Files() const;

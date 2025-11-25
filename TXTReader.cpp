@@ -5,6 +5,7 @@
 #include "FileException.h"
 #include "ParseException.h"
 #include "ValidationException.h"
+#include "TrackSearchParams.h"
 #include <QFile>
 #include <QTextStream>
 
@@ -28,20 +29,17 @@ bool TXTReader::loadFromTXT(MusicCatalog& catalog, const QString& filename) {
                             "duration" + TXTParser::FIELD_SEPARATOR +
                             "filepath";
     
-    QString oldHeader = "id" + TXTParser::FIELD_SEPARATOR +
-                       "title" + TXTParser::FIELD_SEPARATOR +
-                       "artist" + TXTParser::FIELD_SEPARATOR +
-                       "album" + TXTParser::FIELD_SEPARATOR +
-                       "year" + TXTParser::FIELD_SEPARATOR +
-                       "genre" + TXTParser::FIELD_SEPARATOR +
-                       "duration";
-
-    if (header != expectedHeader && header != oldHeader) {
+    if (QString oldHeader = "id" + TXTParser::FIELD_SEPARATOR +
+                           "title" + TXTParser::FIELD_SEPARATOR +
+                           "artist" + TXTParser::FIELD_SEPARATOR +
+                           "album" + TXTParser::FIELD_SEPARATOR +
+                           "year" + TXTParser::FIELD_SEPARATOR +
+                           "genre" + TXTParser::FIELD_SEPARATOR +
+                           "duration";
+        header != expectedHeader && header != oldHeader) {
         file.close();
         throw ParseException(1, QString("Неверный заголовок файла. Ожидался формат: id|||title|||artist|||..."));
     }
-
-    bool hasFilePath = header.contains("filepath");
 
     int lineNumber = 1; // Учитываем заголовок
     while (!stream.atEnd()) {
@@ -91,11 +89,15 @@ bool TXTReader::loadFromTXT(MusicCatalog& catalog, const QString& filename) {
         }
 
             // Добавляем трек в каталог с сохранением исходного ID
-        if (filePath.isEmpty()) {
-            catalog.addTrackWithId(id, title, artist, album, year, genre, duration, "");
-        } else {
-            catalog.addTrackWithId(id, title, artist, album, year, genre, duration, filePath);
-        }
+        TrackAddParams params;
+        params.title = title;
+        params.artist = artist;
+        params.album = album;
+        params.year = year;
+        params.genre = genre;
+        params.duration = duration;
+        params.filePath = filePath.isEmpty() ? "" : filePath;
+        catalog.addTrackWithId(id, params);
     }
 
     file.close();

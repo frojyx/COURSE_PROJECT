@@ -51,9 +51,7 @@ QString MP3FileFinder::findFileByTrack(int id, const QString& title, const QStri
 
     // Если не найден, ищем по старому формату
     QString oldFormat = QString("%1.%2.mp3").arg(title).arg(artist);
-    QString oldPath = dir.absoluteFilePath(oldFormat);
-
-    if (QFile::exists(oldPath)) {
+    if (QString oldPath = dir.absoluteFilePath(oldFormat); QFile::exists(oldPath)) {
         return oldPath;
     }
 
@@ -61,8 +59,7 @@ QString MP3FileFinder::findFileByTrack(int id, const QString& title, const QStri
     QStringList filters;
     filters << QString("%1.*.mp3").arg(id);
 
-    QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
-    if (!fileList.isEmpty()) {
+    if (QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files); !fileList.isEmpty()) {
         return fileList.first().absoluteFilePath();
     }
 

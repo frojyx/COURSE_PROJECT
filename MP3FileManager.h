@@ -12,7 +12,7 @@
 
 class MP3FileManager {
 public:
-    MP3FileManager(const QString& musicPath = "D:/music");
+    explicit MP3FileManager(const QString& musicPath = "D:/music");
 
     // Получить список MP3 файлов
     QList<QFileInfo> getMP3Files() const;

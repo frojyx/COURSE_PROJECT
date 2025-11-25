@@ -12,9 +12,9 @@ void SearchResultsWindow::setupUI() {
     setWindowTitle("Результаты поиска");
     setMinimumSize(800, 500);
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    auto *layout = new QVBoxLayout(this);
 
-    QLabel *titleLabel = new QLabel("Найденные треки");
+    auto *titleLabel = new QLabel("Найденные треки");
     titleLabel->setStyleSheet("font-size: 18px; font-weight: bold; margin: 10px;");
 
     resultsTable = new QTableWidget;
@@ -25,8 +25,8 @@ void SearchResultsWindow::setupUI() {
     resultsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     resultsTable->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    QHBoxLayout *buttonLayout = new QHBoxLayout;
-    QPushButton *closeButton = new QPushButton("Закрыть");
+    auto *buttonLayout = new QHBoxLayout;
+    auto *closeButton = new QPushButton("Закрыть");
     buttonLayout->addStretch();
     buttonLayout->addWidget(closeButton);
 
@@ -43,7 +43,7 @@ void SearchResultsWindow::setResults(const QList<Track>& tracks) {
     resultsTable->setRowCount(tracks.size());
 
     for (int i = 0; i < tracks.size(); ++i) {
-        const Track& track = tracks[i];
+        const Track& track = this->tracks[i];
         resultsTable->setItem(i, 0, new QTableWidgetItem(QString::number(track.getId())));
         resultsTable->setItem(i, 1, new QTableWidgetItem(track.getTitle()));
         resultsTable->setItem(i, 2, new QTableWidgetItem(track.getArtist()));
@@ -55,7 +55,7 @@ void SearchResultsWindow::setResults(const QList<Track>& tracks) {
 }
 
 void SearchResultsWindow::onTrackDoubleClicked(int row, int column) {
-    Q_UNUSED(column);
+    Q_UNUSED(column)
     if (row >= 0 && row < tracks.size()) {
         emit trackSelected(tracks[row]);
     }

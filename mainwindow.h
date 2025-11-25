@@ -24,6 +24,7 @@
 #include "GenreManager.h"
 #include "YandexMusicAPI.h"
 #include "YandexMusicIntegrator.h"
+#include "TrackSearchParams.h"
 #include <QDir>
 #include <QDialog>
 #include <QListWidget>

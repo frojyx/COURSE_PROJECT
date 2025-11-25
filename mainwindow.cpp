@@ -113,10 +113,17 @@ void MainWindow::searchTracks() {
     int maxDuration = searchMaxDuration->value();
 
     // Получаем результаты фильтрации
-    QList<Track> results = catalog.searchTracksWithFilters(
-        title, artist, album, genre,
-        minYear, maxYear, minDuration, maxDuration
-        );
+    TrackSearchParams params;
+    params.title = title;
+    params.artist = artist;
+    params.album = album;
+    params.genre = genre;
+    params.minYear = minYear;
+    params.maxYear = maxYear;
+    params.minDuration = minDuration;
+    params.maxDuration = maxDuration;
+    
+    QList<Track> results = catalog.searchTracksWithFilters(params);
 
     // Подсветка строк в текущей таблице
     updateTrackTable(); // гарантируем, что таблица содержит все треки

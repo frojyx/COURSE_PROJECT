@@ -16,9 +16,9 @@ void MusicCatalog::addTrack(const QString& title, const QString& artist,
     repository.addTrack(title, artist, album, year, genre, duration, filePath);
 }
 
-void MusicCatalog::addTrackWithId(int id, const QString& title, const QString& artist,
-                                  const QString& album, int year, const QString& genre, int duration, const QString& filePath) {
-    repository.addTrackWithId(id, title, artist, album, year, genre, duration, filePath);
+void MusicCatalog::addTrackWithId(int id, const TrackAddParams& params) {
+    repository.addTrackWithId(id, params.title, params.artist, params.album, 
+                             params.year, params.genre, params.duration, params.filePath);
 }
 
 bool MusicCatalog::removeTrack(int id) {
@@ -65,11 +65,9 @@ QList<Track> MusicCatalog::searchTracks(const QString& searchTerm) const {
     return searcher.searchTracks(searchTerm);
 }
 
-QList<Track> MusicCatalog::searchTracksWithFilters(const QString& title, const QString& artist,
-                                                   const QString& album, const QString& genre,
-                                                   int minYear, int maxYear,
-                                                   int minDuration, int maxDuration) const {
-    return searcher.searchTracksWithFilters(title, artist, album, genre, minYear, maxYear, minDuration, maxDuration);
+QList<Track> MusicCatalog::searchTracksWithFilters(const TrackSearchParams& params) const {
+    return searcher.searchTracksWithFilters(params.title, params.artist, params.album, params.genre,
+                                           params.minYear, params.maxYear, params.minDuration, params.maxDuration);
 }
 
 void MusicCatalog::sortByTitle(bool ascending) {

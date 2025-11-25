@@ -3,6 +3,10 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QByteArray>
+#include <cstddef>
+#include <array>
+#include <cstdint>
+#include <bit>
 
 // Простая функция для чтения ID3v2 тегов из MP3 файла
 QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray& frameId) {
@@ -15,10 +19,14 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
     int pos = 10;
 
     // Читаем размер тега (4 байта, синхросafe integer)
-    int tagSize = ((unsigned char)data[6] << 21) |
-                  ((unsigned char)data[7] << 14) |
-                  ((unsigned char)data[8] << 7) |
-                  (unsigned char)data[9];
+    std::byte byte6 = static_cast<std::byte>(data[6]);
+    std::byte byte7 = static_cast<std::byte>(data[7]);
+    std::byte byte8 = static_cast<std::byte>(data[8]);
+    std::byte byte9 = static_cast<std::byte>(data[9]);
+    int tagSize = (std::to_integer<std::uint8_t>(byte6) << 21) |
+                  (std::to_integer<std::uint8_t>(byte7) << 14) |
+                  (std::to_integer<std::uint8_t>(byte8) << 7) |
+                  std::to_integer<std::uint8_t>(byte9);
 
     // Ищем нужный фрейм
     while (pos + 10 < data.size() && pos < 10 + tagSize) {
@@ -26,10 +34,14 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
         QByteArray frameID = frameHeader.left(4);
 
         // Читаем размер фрейма (4 байта, синхросafe integer)
-        int frameSize = ((unsigned char)frameHeader[4] << 21) |
-                        ((unsigned char)frameHeader[5] << 14) |
-                        ((unsigned char)frameHeader[6] << 7) |
-                        (unsigned char)frameHeader[7];
+        std::byte fbyte4 = static_cast<std::byte>(frameHeader[4]);
+        std::byte fbyte5 = static_cast<std::byte>(frameHeader[5]);
+        std::byte fbyte6 = static_cast<std::byte>(frameHeader[6]);
+        std::byte fbyte7 = static_cast<std::byte>(frameHeader[7]);
+        int frameSize = (std::to_integer<std::uint8_t>(fbyte4) << 21) |
+                        (std::to_integer<std::uint8_t>(fbyte5) << 14) |
+                        (std::to_integer<std::uint8_t>(fbyte6) << 7) |
+                        std::to_integer<std::uint8_t>(fbyte7);
 
         if (frameID == frameId) {
             // Пропускаем флаги (2 байта)
@@ -37,17 +49,22 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
 
             // Пропускаем encoding byte (обычно UTF-16 или UTF-8)
             if (frameData.size() > 1) {
-                int encoding = (unsigned char)frameData[0];
+                std::byte encodingByte = static_cast<std::byte>(frameData[0]);
+                int encoding = std::to_integer<int>(encodingByte);
                 if (encoding == 0 || encoding == 3) {
                     // ISO-8859-1 или UTF-8
                     QString result = QString::fromUtf8(frameData.mid(1));
                     return result.trimmed();
                 } else if (encoding == 1 || encoding == 2) {
                     // UTF-16 with BOM или UTF-16BE
-                    const char16_t* data = reinterpret_cast<const char16_t*>(frameData.constData() + 1);
-                    qsizetype length = (frameSize - 1) / 2;
-                    QString result = QString::fromUtf16(data, length);
-                    return result.trimmed();
+                    QByteArray utf16Data = frameData.mid(1);
+                    if (utf16Data.size() % 2 == 0) {
+                        QString result = QString::fromUtf16(
+                            reinterpret_cast<const char16_t*>(utf16Data.constData()),
+                            utf16Data.size() / 2
+                        );
+                        return result.trimmed();
+                    }
                 }
             }
         }
@@ -74,46 +91,135 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
 
     // Ищем MP3 фрейм (синхронное слово 0xFFE0-0xFFEF)
     for (int i = 0; i < buffer.size() - 4; ++i) {
-        if ((unsigned char)buffer[i] == 0xFF &&
-            ((unsigned char)buffer[i+1] & 0xE0) == 0xE0) {
+        std::byte byte0 = static_cast<std::byte>(buffer[i]);
+        std::byte byte1 = static_cast<std::byte>(buffer[i+1]);
+        
+        if (std::to_integer<std::uint8_t>(byte0) != 0xFF || 
+            (std::to_integer<std::uint8_t>(byte1) & 0xE0) != 0xE0) {
+            continue;
+        }
 
-            // Читаем заголовок MP3 фрейма
-            unsigned char header2 = buffer[i+1];
-            unsigned char header3 = buffer[i+2];
+        // Читаем заголовок MP3 фрейма
+        std::byte header2 = static_cast<std::byte>(buffer[i+1]);
+        std::byte header3 = static_cast<std::byte>(buffer[i+2]);
 
-            // Проверяем версию MP3 (MPEG-1, MPEG-2)
-            int layer = (header2 >> 1) & 0x03;
+        // Проверяем версию MP3 (MPEG-1, MPEG-2)
+        int header2Val = std::to_integer<std::uint8_t>(header2);
+        int header3Val = std::to_integer<std::uint8_t>(header3);
+        int layer = (header2Val >> 1) & 0x03;
+        if (layer != 1) { // Layer III (MP3)
+            continue;
+        }
 
-            if (layer == 1) { // Layer III (MP3)
-                // Извлекаем битрейт
-                int bitrateIndex = (header3 >> 4) & 0x0F;
-                // Извлекаем частоту дискретизации
-                int sampleRateIndex = (header3 >> 2) & 0x03;
+        // Извлекаем битрейт
+        int bitrateIndex = (header3Val >> 4) & 0x0F;
+        // Извлекаем частоту дискретизации
+        int sampleRateIndex = (header3Val >> 2) & 0x03;
 
-                // Битрейт для MPEG-1 Layer III (kbps)
-                int bitrates[] = {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0};
-                if (bitrateIndex == 0 || bitrateIndex >= 15) {
-                    continue;
-                }
-                int bitrate = bitrates[bitrateIndex] * 1000; // в битах в секунду
+        // Битрейт для MPEG-1 Layer III (kbps)
+        constexpr std::array<int, 16> bitrates = {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0};
+        if (bitrateIndex == 0 || bitrateIndex >= 15) {
+            continue;
+        }
+        int bitrate = bitrates[bitrateIndex] * 1000; // в битах в секунду
 
-                // Частота дискретизации для MPEG-1 (Hz)
-                int sampleRates[] = {44100, 48000, 32000, 0};
-                if (sampleRateIndex >= 3) {
-                    continue;
-                }
-                int sampleRate = sampleRates[sampleRateIndex];
+        // Частота дискретизации для MPEG-1 (Hz)
+        constexpr std::array<int, 4> sampleRates = {44100, 48000, 32000, 0};
+        if (sampleRateIndex >= 3) {
+            continue;
+        }
+        int sampleRate = sampleRates[sampleRateIndex];
 
-                if (bitrate > 0 && sampleRate > 0) {
-                    // Длительность = (размер файла * 8) / битрейт
-                    int duration = (fileSize * 8) / bitrate;
-                    return duration;
-                }
-            }
+        if (bitrate > 0 && sampleRate > 0) {
+            // Длительность = (размер файла * 8) / битрейт
+            int duration = (fileSize * 8) / bitrate;
+            return duration;
         }
     }
 
     return 0;
+}
+
+namespace {
+    struct ID3v1Tags {
+        QString title;
+        QString artist;
+        QString album;
+        QString year;
+        QString genre;
+    };
+    
+    ID3v1Tags readID3v1Tags(QFile& file) {
+        ID3v1Tags tags;
+        if (!file.seek(file.size() - 128)) {
+            return tags;
+        }
+        
+        QByteArray id3v1 = file.read(128);
+        if (!id3v1.startsWith("TAG")) {
+            return tags;
+        }
+        
+        tags.title = QString::fromLatin1(id3v1.mid(3, 30)).trimmed();
+        tags.artist = QString::fromLatin1(id3v1.mid(33, 30)).trimmed();
+        tags.album = QString::fromLatin1(id3v1.mid(63, 30)).trimmed();
+        tags.year = QString::fromLatin1(id3v1.mid(93, 4)).trimmed();
+        
+        std::byte genreByte = static_cast<std::byte>(id3v1[125]);
+        int genreIndex = std::to_integer<int>(genreByte);
+        if (genreIndex < 80) {
+            constexpr std::array<const char*, 80> genres = {
+                "Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk", "Grunge",
+                "Hip-Hop", "Jazz", "Metal", "New Age", "Oldies", "Other", "Pop", "R&B",
+                "Rap", "Reggae", "Rock", "Techno", "Industrial", "Alternative", "Ska",
+                "Death Metal", "Pranks", "Soundtrack", "Euro-Techno", "Ambient",
+                "Trip-Hop", "Vocal", "Jazz+Funk", "Fusion", "Trance", "Classical",
+                "Instrumental", "Acid", "House", "Game", "Sound Clip", "Gospel", "Noise",
+                "AlternRock", "Bass", "Soul", "Punk", "Space", "Meditative",
+                "Instrumental Pop", "Instrumental Rock", "Ethnic", "Gothic", "Darkwave",
+                "Techno-Industrial", "Electronic", "Pop-Folk", "Eurodance", "Dream",
+                "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap",
+                "Pop/Funk", "Jungle", "Native American", "Cabaret", "New Wave",
+                "Psychadelic", "Rave", "Showtunes", "Trailer", "Lo-Fi", "Tribal",
+                "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll",
+                "Hard Rock"
+            };
+            tags.genre = QString::fromUtf8(genres[genreIndex]);
+        }
+        
+        return tags;
+    }
+    
+    void fillMetadataFields(const QString& id3Title, const QString& id3Artist,
+                           const QString& id3Album, const QString& id3Year, const QString& id3Genre,
+                           QString& title, QString& artist, QString* album, int* year, 
+                           QString* genre, int* duration, const QString& filePath, bool& found,
+                           int calculatedDuration) {
+        if (!id3Title.isEmpty()) {
+            title = id3Title;
+            found = true;
+        }
+        if (!id3Artist.isEmpty()) {
+            artist = id3Artist;
+            found = true;
+        }
+        if (!id3Album.isEmpty() && album != nullptr) {
+            *album = id3Album;
+        }
+        if (!id3Year.isEmpty() && year != nullptr) {
+            bool ok;
+            int yearValue = id3Year.left(4).toInt(&ok);
+            if (ok && yearValue > 1900 && yearValue < 2100) {
+                *year = yearValue;
+            }
+        }
+        if (!id3Genre.isEmpty() && genre != nullptr) {
+            *genre = id3Genre;
+        }
+        if (duration != nullptr && calculatedDuration > 0) {
+            *duration = calculatedDuration;
+        }
+    }
 }
 
 bool MP3MetadataReader::readMP3Metadata(const QString& filePath, QString& title, QString& artist,
@@ -144,80 +250,37 @@ bool MP3MetadataReader::readMP3Metadata(const QString& filePath, QString& title,
     }
 
     // Если не нашли, пробуем старые ID3v1 теги (в конце файла)
-    if (id3Title.isEmpty() || id3Artist.isEmpty() || id3Album.isEmpty() || id3Year.isEmpty()) {
+    bool needID3v1 = id3Title.isEmpty() || id3Artist.isEmpty() || id3Album.isEmpty() || id3Year.isEmpty();
+    if (needID3v1) {
         file.open(QIODevice::ReadOnly);
-        if (file.seek(file.size() - 128)) {
-            QByteArray id3v1 = file.read(128);
-            if (id3v1.startsWith("TAG")) {
-                if (id3Title.isEmpty()) {
-                    id3Title = QString::fromLatin1(id3v1.mid(3, 30)).trimmed();
-                }
-                if (id3Artist.isEmpty()) {
-                    id3Artist = QString::fromLatin1(id3v1.mid(33, 30)).trimmed();
-                }
-                if (id3Album.isEmpty()) {
-                    id3Album = QString::fromLatin1(id3v1.mid(63, 30)).trimmed();
-                }
-                if (id3Year.isEmpty()) {
-                    id3Year = QString::fromLatin1(id3v1.mid(93, 4)).trimmed();
-                }
-                if (id3Genre.isEmpty()) {
-                    unsigned char genreByte = id3v1[125];
-                    // Базовый список жанров ID3v1 (первые 80)
-                    if (genreByte < 80) {
-                        QString genres[] = {"Blues", "Classic Rock", "Country", "Dance", "Disco", "Funk", "Grunge",
-                                            "Hip-Hop", "Jazz", "Metal", "New Age", "Oldies", "Other", "Pop", "R&B",
-                                            "Rap", "Reggae", "Rock", "Techno", "Industrial", "Alternative", "Ska",
-                                            "Death Metal", "Pranks", "Soundtrack", "Euro-Techno", "Ambient",
-                                            "Trip-Hop", "Vocal", "Jazz+Funk", "Fusion", "Trance", "Classical",
-                                            "Instrumental", "Acid", "House", "Game", "Sound Clip", "Gospel", "Noise",
-                                            "AlternRock", "Bass", "Soul", "Punk", "Space", "Meditative",
-                                            "Instrumental Pop", "Instrumental Rock", "Ethnic", "Gothic", "Darkwave",
-                                            "Techno-Industrial", "Electronic", "Pop-Folk", "Eurodance", "Dream",
-                                            "Southern Rock", "Comedy", "Cult", "Gangsta", "Top 40", "Christian Rap",
-                                            "Pop/Funk", "Jungle", "Native American", "Cabaret", "New Wave",
-                                            "Psychadelic", "Rave", "Showtunes", "Trailer", "Lo-Fi", "Tribal",
-                                            "Acid Punk", "Acid Jazz", "Polka", "Retro", "Musical", "Rock & Roll",
-                                            "Hard Rock"};
-                        id3Genre = genres[genreByte];
-                    }
-                }
-            }
-        }
+        ID3v1Tags id3v1Tags = readID3v1Tags(file);
         file.close();
+        
+        if (id3Title.isEmpty() && !id3v1Tags.title.isEmpty()) {
+            id3Title = id3v1Tags.title;
+        }
+        if (id3Artist.isEmpty() && !id3v1Tags.artist.isEmpty()) {
+            id3Artist = id3v1Tags.artist;
+        }
+        if (id3Album.isEmpty() && !id3v1Tags.album.isEmpty()) {
+            id3Album = id3v1Tags.album;
+        }
+        if (id3Year.isEmpty() && !id3v1Tags.year.isEmpty()) {
+            id3Year = id3v1Tags.year;
+        }
+        if (id3Genre.isEmpty() && !id3v1Tags.genre.isEmpty()) {
+            id3Genre = id3v1Tags.genre;
+        }
     }
 
     // Заполняем поля
     bool found = false;
-    if (!id3Title.isEmpty()) {
-        title = id3Title;
-        found = true;
-    }
-    if (!id3Artist.isEmpty()) {
-        artist = id3Artist;
-        found = true;
-    }
-    if (!id3Album.isEmpty() && album != nullptr) {
-        *album = id3Album;
-    }
-    if (!id3Year.isEmpty() && year != nullptr) {
-        bool ok;
-        int yearValue = id3Year.left(4).toInt(&ok);
-        if (ok && yearValue > 1900 && yearValue < 2100) {
-            *year = yearValue;
-        }
-    }
-    if (!id3Genre.isEmpty() && genre != nullptr) {
-        *genre = id3Genre;
-    }
-
-    // Пытаемся вычислить длительность из MP3 заголовков
+    int calculatedDuration = 0;
     if (duration != nullptr) {
-        int mp3Duration = calculateMP3Duration(filePath);
-        if (mp3Duration > 0) {
-            *duration = mp3Duration;
-        }
+        calculatedDuration = calculateMP3Duration(filePath);
     }
+    fillMetadataFields(id3Title, id3Artist, id3Album, id3Year, id3Genre,
+                      title, artist, album, year, genre, duration, filePath, found, calculatedDuration);
 
     return found;
 }

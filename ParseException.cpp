@@ -2,13 +2,12 @@
 #include "ParseException.h"
 
 ParseException::ParseException(const QString& message)
-    : MusicCatalogException(message), lineNumber(-1)
+    : MusicCatalogException(message)
 {
 }
 
-ParseException::ParseException(const QString& data, const QString& expectedFormat)
-    : MusicCatalogException(QString("Ошибка парсинга: неверный формат данных. Ожидался: %1").arg(expectedFormat)),
-      lineNumber(-1)
+ParseException::ParseException(const QString& [[maybe_unused]] data, const QString& expectedFormat)
+    : MusicCatalogException(QString("Ошибка парсинга: неверный формат данных. Ожидался: %1").arg(expectedFormat))
 {
 }
 
