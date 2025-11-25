@@ -139,16 +139,16 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
         auto header3 = static_cast<std::byte>(buffer[i+2]);
 
         // Проверяем версию MP3 (MPEG-1, MPEG-2)
-        int header2Val = std::to_integer<std::uint8_t>(header2);
-        int header3Val = std::to_integer<std::uint8_t>(header3);
-        if (int layer = (header2Val >> 1) & 0x03; layer != 1) {
+        auto header2Val = std::to_integer<std::uint8_t>(header2);
+        auto header3Val = std::to_integer<std::uint8_t>(header3);
+        if (auto layer = (header2Val >> 1) & 0x03; layer != 1) {
             continue;
         }
 
         // Извлекаем битрейт
-        int bitrateIndex = (header3Val >> 4) & 0x0F;
+        auto bitrateIndex = (header3Val >> 4) & 0x0F;
         // Извлекаем частоту дискретизации
-        int sampleRateIndex = (header3Val >> 2) & 0x03;
+        auto sampleRateIndex = (header3Val >> 2) & 0x03;
 
         // Битрейт для MPEG-1 Layer III (kbps)
         constexpr std::array<int, 16> bitrates = {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0};
