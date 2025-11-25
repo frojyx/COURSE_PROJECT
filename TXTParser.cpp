@@ -48,7 +48,7 @@ QStringList TXTParser::parseLine(const QString& line) {
     // Парсинг TXT с учетом экранирования
     const int lineLen = line.length();
     for (int i = 0; i < lineLen; ++i) {
-        QChar c = line[i];
+        const QChar c = line.at(i);
         
         if (escapeNext) {
             handleEscapedChar(c, field, i, line);
@@ -65,9 +65,10 @@ QStringList TXTParser::parseLine(const QString& line) {
             fields.append(field);
             field.clear();
             i += 2;
-        } else {
-            field.append(c);
+            continue;
         }
+        
+        field.append(c);
     }
     
     if (escapeNext) {

@@ -3,10 +3,37 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QByteArray>
+#include <QVector>
 #include <cstddef>
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <bit>
+
+namespace {
+    // Безопасное преобразование UTF-16 данных из ID3 фрейма
+    QString convertUTF16Frame(const QByteArray& frameData) {
+        if (frameData.size() <= 1) {
+            return QString();
+        }
+        
+        QByteArray utf16Data = frameData.mid(1);
+        if (utf16Data.size() % 2 != 0) {
+            return QString();
+        }
+        
+        // Используем QByteArray для безопасного преобразования без reinterpret_cast
+        // Копируем данные в выровненный буфер и используем QString::fromUtf16
+        const int charCount = utf16Data.size() / 2;
+        if (charCount > 0) {
+            // Создаем временный массив char16_t для безопасного преобразования
+            QVector<char16_t> utf16Buffer(charCount);
+            std::memcpy(utf16Buffer.data(), utf16Data.constData(), utf16Data.size());
+            return QString::fromUtf16(utf16Buffer.constData(), charCount);
+        }
+        return QString();
+    }
+}
 
 // Простая функция для чтения ID3v2 тегов из MP3 файла
 QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray& frameId) {
@@ -23,10 +50,10 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
     auto byte7 = static_cast<std::byte>(data[7]);
     auto byte8 = static_cast<std::byte>(data[8]);
     auto byte9 = static_cast<std::byte>(data[9]);
-    int tagSize = (std::to_integer<std::uint8_t>(byte6) << 21) |
-                  (std::to_integer<std::uint8_t>(byte7) << 14) |
-                  (std::to_integer<std::uint8_t>(byte8) << 7) |
-                  std::to_integer<std::uint8_t>(byte9);
+    const int tagSize = (std::to_integer<std::uint8_t>(byte6) << 21) |
+                        (std::to_integer<std::uint8_t>(byte7) << 14) |
+                        (std::to_integer<std::uint8_t>(byte8) << 7) |
+                        std::to_integer<std::uint8_t>(byte9);
 
     // Ищем нужный фрейм
     while (pos + 10 < data.size() && pos < 10 + tagSize) {
@@ -38,10 +65,10 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
         auto fbyte5 = static_cast<std::byte>(frameHeader[5]);
         auto fbyte6 = static_cast<std::byte>(frameHeader[6]);
         auto fbyte7 = static_cast<std::byte>(frameHeader[7]);
-        int frameSize = (std::to_integer<std::uint8_t>(fbyte4) << 21) |
-                        (std::to_integer<std::uint8_t>(fbyte5) << 14) |
-                        (std::to_integer<std::uint8_t>(fbyte6) << 7) |
-                        std::to_integer<std::uint8_t>(fbyte7);
+        const int frameSize = (std::to_integer<std::uint8_t>(fbyte4) << 21) |
+                              (std::to_integer<std::uint8_t>(fbyte5) << 14) |
+                              (std::to_integer<std::uint8_t>(fbyte6) << 7) |
+                              std::to_integer<std::uint8_t>(fbyte7);
 
         if (frameID == frameId) {
             // Пропускаем флаги (2 байта)
@@ -63,15 +90,10 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
             
             if (encoding == 1 || encoding == 2) {
                 // UTF-16 with BOM или UTF-16BE
-                QByteArray utf16Data = frameData.mid(1);
-                if (utf16Data.size() % 2 != 0) {
-                    continue;
+                QString result = convertUTF16Frame(frameData);
+                if (!result.isEmpty()) {
+                    return result.trimmed();
                 }
-                // Используем более безопасный способ преобразования
-                const auto* dataPtr = utf16Data.constData();
-                const auto* utf16Ptr = reinterpret_cast<const char16_t*>(dataPtr);
-                QString result = QString::fromUtf16(utf16Ptr, utf16Data.size() / 2);
-                return result.trimmed();
             }
         }
 
@@ -97,12 +119,12 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
 
     // Ищем MP3 фрейм (синхронное слово 0xFFE0-0xFFEF)
     for (int i = 0; i < buffer.size() - 4; ++i) {
-        if (std::byte byte0 = static_cast<std::byte>(buffer[i]);
+        if (auto byte0 = static_cast<std::byte>(buffer[i]);
             std::to_integer<std::uint8_t>(byte0) != 0xFF) {
             continue;
         }
         
-        if (std::byte byte1 = static_cast<std::byte>(buffer[i+1]);
+        if (auto byte1 = static_cast<std::byte>(buffer[i+1]);
             (std::to_integer<std::uint8_t>(byte1) & 0xE0) != 0xE0) {
             continue;
         }

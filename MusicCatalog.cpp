@@ -66,8 +66,7 @@ QList<Track> MusicCatalog::searchTracks(const QString& searchTerm) const {
 }
 
 QList<Track> MusicCatalog::searchTracksWithFilters(const TrackSearchParams& params) const {
-    return searcher.searchTracksWithFilters(params.title, params.artist, params.album, params.genre,
-                                           params.minYear, params.maxYear, params.minDuration, params.maxDuration);
+    return searcher.searchTracksWithFilters(params);
 }
 
 void MusicCatalog::sortByTitle(bool ascending) {

@@ -89,7 +89,8 @@ private:
         QSpinBox *searchMaxYear = nullptr;
         QSpinBox *searchMinDuration = nullptr;
         QSpinBox *searchMaxDuration = nullptr;
-    } searchUI;
+    };
+    SearchUI searchUI;
 
     struct AddTrackUI {
         QLabel *selectedFileLabel = nullptr;
@@ -100,7 +101,8 @@ private:
         QComboBox *addGenreEdit = nullptr;
         QSpinBox *addDurationEdit = nullptr;
         QString selectedMP3FilePath;
-    } addTrackUI;
+    };
+    AddTrackUI addTrackUI;
 
     struct EditTrackUI {
         QLineEdit *editTitleEdit = nullptr;
@@ -109,7 +111,8 @@ private:
         QSpinBox *editYearEdit = nullptr;
         QComboBox *editGenreEdit = nullptr;
         QSpinBox *editDurationEdit = nullptr;
-    } editTrackUI;
+    };
+    EditTrackUI editTrackUI;
 
     struct YandexMusicUI {
         YandexMusicIntegrator* integrator = nullptr;
@@ -117,7 +120,8 @@ private:
         QListWidget* resultsList = nullptr;
         QLineEdit* searchEdit = nullptr;
         QList<YandexTrack> currentTracks;
-    } yandexUI;
+    };
+    YandexMusicUI yandexUI;
 
     // Вспомогательные методы для работы с жанрами
     QStringList getGenreList() const;

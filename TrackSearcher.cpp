@@ -1,6 +1,7 @@
 // TrackSearcher.cpp
 #include "TrackSearcher.h"
 #include "TrackRepository.h"
+#include "TrackSearchParams.h"
 
 TrackSearcher::TrackSearcher(const TrackRepository& repository)
     : repository(repository)
@@ -73,53 +74,54 @@ QList<Track> TrackSearcher::searchTracks(const QString& searchTerm) const {
     return result;
 }
 
-QList<Track> TrackSearcher::searchTracksWithFilters(const QString& title, const QString& artist,
-                                                     const QString& album, const QString& genre,
-                                                     int minYear, int maxYear,
-                                                     int minDuration, int maxDuration) const {
+namespace {
+    bool matchesFilters(const Track& track, const TrackSearchParams& params) {
+        // Фильтр по названию
+        if (!params.title.isEmpty() && !track.getTitle().contains(params.title, Qt::CaseInsensitive)) {
+            return false;
+        }
+
+        // Фильтр по исполнителю
+        if (!params.artist.isEmpty() && !track.getArtist().contains(params.artist, Qt::CaseInsensitive)) {
+            return false;
+        }
+
+        // Фильтр по альбому
+        if (!params.album.isEmpty() && !track.getAlbum().contains(params.album, Qt::CaseInsensitive)) {
+            return false;
+        }
+
+        // Фильтр по жанру
+        if (!params.genre.isEmpty() && !track.getGenre().contains(params.genre, Qt::CaseInsensitive)) {
+            return false;
+        }
+
+        // Фильтр по году
+        if (params.minYear >= 1900 && track.getYear() < params.minYear) {
+            return false;
+        }
+        if (params.maxYear <= 2100 && params.maxYear >= 1900 && track.getYear() > params.maxYear) {
+            return false;
+        }
+
+        // Фильтр по длительности
+        if (params.minDuration > 1 && track.getDuration() < params.minDuration) {
+            return false;
+        }
+        if (params.maxDuration < 3600 && track.getDuration() > params.maxDuration) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
+QList<Track> TrackSearcher::searchTracksWithFilters(const TrackSearchParams& params) const {
     QList<Track> result;
     QList<Track> tracks = repository.findAllTracks();
 
     for (const Track& track : tracks) {
-        bool matches = true;
-
-        // Фильтр по названию
-        if (!title.isEmpty() && !track.getTitle().contains(title, Qt::CaseInsensitive)) {
-            matches = false;
-        }
-
-        // Фильтр по исполнителю
-        if (matches && !artist.isEmpty() && !track.getArtist().contains(artist, Qt::CaseInsensitive)) {
-            matches = false;
-        }
-
-        // Фильтр по альбому
-        if (matches && !album.isEmpty() && !track.getAlbum().contains(album, Qt::CaseInsensitive)) {
-            matches = false;
-        }
-
-        // Фильтр по жанру
-        if (matches && !genre.isEmpty() && !track.getGenre().contains(genre, Qt::CaseInsensitive)) {
-            matches = false;
-        }
-
-        // Фильтр по году
-        if (matches && minYear >= 1900 && track.getYear() < minYear) {
-            matches = false;
-        }
-        if (matches && maxYear <= 2100 && maxYear >= 1900 && track.getYear() > maxYear) {
-            matches = false;
-        }
-
-        // Фильтр по длительности
-        if (matches && minDuration > 1 && track.getDuration() < minDuration) {
-            matches = false;
-        }
-        if (matches && maxDuration < 3600 && track.getDuration() > maxDuration) {
-            matches = false;
-        }
-
-        if (matches) {
+        if (matchesFilters(track, params)) {
             result.append(track);
         }
     }

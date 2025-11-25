@@ -3,6 +3,7 @@
 #define TRACKSEARCHER_H
 
 #include "Track.h"
+#include "TrackSearchParams.h"
 #include <QList>
 #include <QString>
 
@@ -23,10 +24,7 @@ public:
     QList<Track> findTracksByYearRange(int startYear, int endYear) const;
 
     // Комбинированный поиск с фильтрами
-    QList<Track> searchTracksWithFilters(const QString& title, const QString& artist,
-                                         const QString& album, const QString& genre,
-                                         int minYear, int maxYear,
-                                         int minDuration, int maxDuration) const;
+    QList<Track> searchTracksWithFilters(const TrackSearchParams& params) const;
 
 private:
     const TrackRepository& repository;

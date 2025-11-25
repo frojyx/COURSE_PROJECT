@@ -212,8 +212,8 @@ void MainWindow::onMP3FileSelected() {
     }
 }
 
-void MainWindow::fillFormFromParsedFileName(const QString& fileBaseName, const QString& title, 
-                                            const QString& artist, const QString& parsedAlbum,
+void MainWindow::fillFormFromParsedFileName(const QString& fileBaseName, [[maybe_unused]] const QString& title, 
+                                            [[maybe_unused]] const QString& artist, const QString& parsedAlbum,
                                             int parsedYear, const QString& parsedGenre, int parsedDuration) {
     QString baseName = QFileInfo(fileBaseName).baseName();
     if (baseName.isEmpty() || !baseName[0].isDigit()) {
@@ -407,7 +407,7 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
         const Track& track = tracks[i];
 
         // Сохраняем trackId в данных первого столбца (название)
-        QTableWidgetItem *titleItem = new QTableWidgetItem(track.getTitle());
+        auto *titleItem = new QTableWidgetItem(track.getTitle());
         titleItem->setData(Qt::UserRole, track.getId());
         searchUI.trackTable->setItem(i, 0, titleItem);
 
