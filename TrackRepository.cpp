@@ -48,16 +48,7 @@ void TrackRepository::addTrack(const QString& title, const QString& artist,
     tracks.append(track);
 }
 
-void TrackRepository::addTrackWithId(int id, const QString& title, const QString& artist,
-                                      const QString& album, int year, const QString& genre, int duration, const QString& filePath) {
-    TrackParams params;
-    params.title = title;
-    params.artist = artist;
-    params.album = album;
-    params.year = year;
-    params.genre = genre;
-    params.duration = duration;
-    params.filePath = filePath;
+void TrackRepository::addTrackWithId(int id, const TrackParams& params) {
     Track track(id, params);
     tracks.append(track);
     if (id >= nextId) {

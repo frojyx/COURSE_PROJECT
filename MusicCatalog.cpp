@@ -17,8 +17,15 @@ void MusicCatalog::addTrack(const QString& title, const QString& artist,
 }
 
 void MusicCatalog::addTrackWithId(int id, const TrackAddParams& params) {
-    repository.addTrackWithId(id, params.title, params.artist, params.album, 
-                             params.year, params.genre, params.duration, params.filePath);
+    TrackParams trackParams;
+    trackParams.title = params.title;
+    trackParams.artist = params.artist;
+    trackParams.album = params.album;
+    trackParams.year = params.year;
+    trackParams.genre = params.genre;
+    trackParams.duration = params.duration;
+    trackParams.filePath = params.filePath;
+    repository.addTrackWithId(id, trackParams);
 }
 
 bool MusicCatalog::removeTrack(int id) {

@@ -15,8 +15,7 @@ public:
                   const QString& album, int year, const QString& genre, int duration);
     void addTrack(const QString& title, const QString& artist,
                   const QString& album, int year, const QString& genre, int duration, const QString& filePath);
-    void addTrackWithId(int id, const QString& title, const QString& artist,
-                        const QString& album, int year, const QString& genre, int duration, const QString& filePath);
+    void addTrackWithId(int id, const TrackParams& params);
     bool removeTrack(int id);
     bool updateTrack(int id, const Track& updatedTrack);
 

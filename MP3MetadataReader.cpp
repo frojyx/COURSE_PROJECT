@@ -24,13 +24,27 @@ namespace {
         
         // Используем QByteArray для безопасного преобразования без reinterpret_cast
         // Копируем данные в выровненный буфер и используем QString::fromUtf16
-        const int charCount = utf16Data.size() / 2;
-        if (charCount > 0) {
+        if (const int charCount = utf16Data.size() / 2; charCount > 0) {
             // Создаем временный массив char16_t для безопасного преобразования
             QVector<char16_t> utf16Buffer(charCount);
             std::memcpy(utf16Buffer.data(), utf16Data.constData(), utf16Data.size());
             return QString::fromUtf16(utf16Buffer.constData(), charCount);
         }
+        return QString();
+    }
+    
+    // Обработка кодировки фрейма
+    QString processFrameEncoding(const QByteArray& frameData, int encoding) {
+        if (encoding == 0 || encoding == 3) {
+            // ISO-8859-1 или UTF-8
+            return QString::fromUtf8(frameData.mid(1));
+        }
+        
+        if (encoding == 1 || encoding == 2) {
+            // UTF-16 with BOM или UTF-16BE
+            return convertUTF16Frame(frameData);
+        }
+        
         return QString();
     }
 }
@@ -82,18 +96,9 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
             auto encodingByte = static_cast<std::byte>(frameData[0]);
             int encoding = std::to_integer<int>(encodingByte);
             
-            if (encoding == 0 || encoding == 3) {
-                // ISO-8859-1 или UTF-8
-                QString result = QString::fromUtf8(frameData.mid(1));
+            QString result = processFrameEncoding(frameData, encoding);
+            if (!result.isEmpty()) {
                 return result.trimmed();
-            }
-            
-            if (encoding == 1 || encoding == 2) {
-                // UTF-16 with BOM или UTF-16BE
-                QString result = convertUTF16Frame(frameData);
-                if (!result.isEmpty()) {
-                    return result.trimmed();
-                }
             }
         }
 
@@ -226,33 +231,43 @@ namespace {
         QString id3Genre;
     };
     
-    void fillMetadataFields(const MetadataFields& metadata,
-                           QString& title, QString& artist, QString* album, int* year, 
-                           QString* genre, int* duration, bool& found,
-                           int calculatedDuration) {
+    struct FillMetadataParams {
+        const MetadataFields& metadata;
+        QString& title;
+        QString& artist;
+        QString* album;
+        int* year;
+        QString* genre;
+        int* duration;
+        bool& found;
+        int calculatedDuration;
+    };
+    
+    void fillMetadataFields(const FillMetadataParams& params) {
+        const auto& metadata = params.metadata;
         if (!metadata.id3Title.isEmpty()) {
-            title = metadata.id3Title;
-            found = true;
+            params.title = metadata.id3Title;
+            params.found = true;
         }
         if (!metadata.id3Artist.isEmpty()) {
-            artist = metadata.id3Artist;
-            found = true;
+            params.artist = metadata.id3Artist;
+            params.found = true;
         }
-        if (!metadata.id3Album.isEmpty() && album != nullptr) {
-            *album = metadata.id3Album;
+        if (!metadata.id3Album.isEmpty() && params.album != nullptr) {
+            *params.album = metadata.id3Album;
         }
-        if (!metadata.id3Year.isEmpty() && year != nullptr) {
+        if (!metadata.id3Year.isEmpty() && params.year != nullptr) {
             bool ok;
             int yearValue = metadata.id3Year.left(4).toInt(&ok);
             if (ok && yearValue > 1900 && yearValue < 2100) {
-                *year = yearValue;
+                *params.year = yearValue;
             }
         }
-        if (!metadata.id3Genre.isEmpty() && genre != nullptr) {
-            *genre = metadata.id3Genre;
+        if (!metadata.id3Genre.isEmpty() && params.genre != nullptr) {
+            *params.genre = metadata.id3Genre;
         }
-        if (duration != nullptr && calculatedDuration > 0) {
-            *duration = calculatedDuration;
+        if (params.duration != nullptr && params.calculatedDuration > 0) {
+            *params.duration = params.calculatedDuration;
         }
     }
 }
@@ -322,7 +337,8 @@ bool MP3MetadataReader::readMP3Metadata(const QString& filePath, QString& title,
     metadata.id3Year = id3Year;
     metadata.id3Genre = id3Genre;
     
-    fillMetadataFields(metadata, title, artist, album, year, genre, duration, found, calculatedDuration);
+    FillMetadataParams fillParams{metadata, title, artist, album, year, genre, duration, found, calculatedDuration};
+    fillMetadataFields(fillParams);
 
     return found;
 }
