@@ -49,11 +49,11 @@ public:
 
     // Перегрузка операторов сравнения
     // NOSONAR: Проект использует C++17, автоматическая генерация operator!= и operator<=> требуют C++20
-    bool operator==(const Track& other) const;
+    bool operator==(const Track& other) const; // NOSONAR: = default требует C++20
     bool operator!=(const Track& other) const; // NOSONAR: требуется для C++17, в C++20 генерируется автоматически
-    bool operator<(const Track& other) const;
-    bool operator>(const Track& other) const;
-    bool operator<=(const Track& other) const;
+    bool operator<(const Track& other) const; // NOSONAR: в C++20 можно заменить на operator<=>
+    bool operator>(const Track& other) const; // NOSONAR: в C++20 можно заменить на operator<=>
+    bool operator<=(const Track& other) const; // NOSONAR: в C++20 можно заменить на operator<=>
     bool operator>=(const Track& other) const; // NOSONAR: в C++20 можно заменить на operator<=>
 
     // Hidden friend операторы для работы с потоками (C++ Core Guidelines)
