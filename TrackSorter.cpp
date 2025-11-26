@@ -38,11 +38,8 @@ void TrackSorter::sortByTitle(bool ascending) {
     QList<Track> tracks = repository.findAllTracks();
 
     auto cmp = [ascending](const Track& a, const Track& b){
-        if (ascending) {
-            return compareTracksByTitle(a, b);
-        } else {
-            return compareTracksByTitle(b, a);
-        }
+        const bool result = compareTracksByTitle(a, b);
+        return ascending ? result : !result;
     };
 
     shellSort(tracks, cmp);
@@ -53,11 +50,8 @@ void TrackSorter::sortByArtist(bool ascending) {
     QList<Track> tracks = repository.findAllTracks();
 
     auto cmp = [ascending](const Track& a, const Track& b){
-        if (ascending) {
-            return compareTracksByArtist(a, b);
-        } else {
-            return compareTracksByArtist(b, a);
-        }
+        const bool result = compareTracksByArtist(a, b);
+        return ascending ? result : !result;
     };
 
     shellSort(tracks, cmp);
@@ -68,11 +62,8 @@ void TrackSorter::sortByYear(bool ascending) {
     QList<Track> tracks = repository.findAllTracks();
 
     auto cmp = [ascending](const Track& a, const Track& b){
-        if (ascending) {
-            return compareTracksByYear(a, b);
-        } else {
-            return compareTracksByYear(b, a);
-        }
+        const bool result = compareTracksByYear(a, b);
+        return ascending ? result : !result;
     };
 
     shellSort(tracks, cmp);
@@ -83,11 +74,8 @@ void TrackSorter::sortByDuration(bool ascending) {
     QList<Track> tracks = repository.findAllTracks();
 
     auto cmp = [ascending](const Track& a, const Track& b){
-        if (ascending) {
-            return compareTracksByDuration(a, b);
-        } else {
-            return compareTracksByDuration(b, a);
-        }
+        const bool result = compareTracksByDuration(a, b);
+        return ascending ? result : !result;
     };
 
     shellSort(tracks, cmp);

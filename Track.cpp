@@ -74,60 +74,7 @@ bool Track::operator>=(const Track& other) const {
     return !(*this < other);
 }
 
-// Дружественная функция для вывода трека в поток
-QTextStream& operator<<(QTextStream& stream, const Track& track) {
-    // Экранируем поля
-    QString title = TXTParser::escapeField(track.title);
-    QString artist = TXTParser::escapeField(track.artist);
-    QString album = TXTParser::escapeField(track.album);
-    QString genre = TXTParser::escapeField(track.genre);
-    QString filePath = TXTParser::escapeField(track.filePath);
-
-    stream << track.id << TXTParser::FIELD_SEPARATOR
-           << title << TXTParser::FIELD_SEPARATOR
-           << artist << TXTParser::FIELD_SEPARATOR
-           << album << TXTParser::FIELD_SEPARATOR
-           << track.year << TXTParser::FIELD_SEPARATOR
-           << genre << TXTParser::FIELD_SEPARATOR
-           << track.duration << TXTParser::FIELD_SEPARATOR
-           << filePath;
-    return stream;
-}
-
-// Дружественная функция для чтения трека из потока
-QTextStream& operator>>(QTextStream& stream, Track& track) {
-    QString line = stream.readLine();
-    if (line.isEmpty()) {
-        return stream;
-    }
-
-    QStringList fields = TXTParser::parseLine(line);
-    if (fields.size() < 7) {
-        return stream;
-    }
-
-    bool ok;
-    track.id = fields[0].toInt(&ok);
-    if (!ok) {
-        track.id = 0;
-    }
-
-    track.title = TXTParser::unescapeField(fields[1]);
-    track.artist = TXTParser::unescapeField(fields[2]);
-    track.album = TXTParser::unescapeField(fields[3]);
-    track.year = fields[4].toInt(&ok);
-    if (!ok) {
-        track.year = 0;
-    }
-    track.genre = TXTParser::unescapeField(fields[5]);
-    track.duration = fields[6].toInt(&ok);
-    if (!ok) {
-        track.duration = 0;
-    }
-    track.filePath = fields.size() >= 8 ? TXTParser::unescapeField(fields[7]) : "";
-
-    return stream;
-}
+// Операторы << и >> теперь определены как hidden friends в Track.h
 
 // Дружественные функции для сравнения треков по различным критериям
 bool compareTracksByTitle(const Track& a, const Track& b) {
