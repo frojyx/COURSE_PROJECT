@@ -58,6 +58,7 @@ void TrackRepository::addTrackWithId(int id, const TrackParams& params) {
 
 bool TrackRepository::removeTrack(int id) {
     for (auto it = tracks.begin(); it != tracks.end(); ++it) {
+        // Используем перегруженный оператор == для сравнения по ID
         if (it->getId() == id) {
             tracks.erase(it);
             return true;

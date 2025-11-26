@@ -3,6 +3,7 @@
 #define TRACK_H
 
 #include <QString>
+#include <QTextStream>
 
 struct TrackParams {
     QString title;
@@ -44,6 +45,24 @@ public:
 
     // Вспомогательные методы
     bool matchesSearch(const QString& searchTerm) const;
+
+    // Перегрузка операторов сравнения
+    bool operator==(const Track& other) const;
+    bool operator!=(const Track& other) const;
+    bool operator<(const Track& other) const;
+    bool operator>(const Track& other) const;
+    bool operator<=(const Track& other) const;
+    bool operator>=(const Track& other) const;
+
+    // Дружественные функции для работы с потоками
+    friend QTextStream& operator<<(QTextStream& stream, const Track& track);
+    friend QTextStream& operator>>(QTextStream& stream, Track& track);
+    
+    // Дружественная функция для сравнения треков по различным критериям
+    friend bool compareTracksByTitle(const Track& a, const Track& b);
+    friend bool compareTracksByArtist(const Track& a, const Track& b);
+    friend bool compareTracksByYear(const Track& a, const Track& b);
+    friend bool compareTracksByDuration(const Track& a, const Track& b);
 
 private:
     int id;

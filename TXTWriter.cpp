@@ -1,6 +1,7 @@
 // TXTWriter.cpp
 #include "TXTWriter.h"
 #include "MusicCatalog.h"
+#include "Track.h"
 #include "TXTParser.h"
 #include "FileException.h"
 #include <QFile>
@@ -27,21 +28,8 @@ bool TXTWriter::saveToTXT(const MusicCatalog& catalog, const QString& filename) 
 
     QList<Track> tracks = catalog.findAllTracks();
     for (const Track& track : tracks) {
-        // Экранируем поля
-        QString title = TXTParser::escapeField(track.getTitle());
-        QString artist = TXTParser::escapeField(track.getArtist());
-        QString album = TXTParser::escapeField(track.getAlbum());
-        QString genre = TXTParser::escapeField(track.getGenre());
-        QString filePath = TXTParser::escapeField(track.getFilePath());
-
-        stream << track.getId() << TXTParser::FIELD_SEPARATOR
-               << title << TXTParser::FIELD_SEPARATOR
-               << artist << TXTParser::FIELD_SEPARATOR
-               << album << TXTParser::FIELD_SEPARATOR
-               << track.getYear() << TXTParser::FIELD_SEPARATOR
-               << genre << TXTParser::FIELD_SEPARATOR
-               << track.getDuration() << TXTParser::FIELD_SEPARATOR
-               << filePath << "\n";
+        // Используем перегруженный оператор << для вывода трека
+        stream << track << "\n";
     }
 
     file.close();
