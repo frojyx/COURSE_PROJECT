@@ -57,21 +57,21 @@ public:
 
     // Hidden friend операторы для работы с потоками (C++ Core Guidelines)
     friend QTextStream& operator<<(QTextStream& stream, const Track& track) {
-        // Экранируем поля
-        QString title = TXTParser::escapeField(track.title);
-        QString artist = TXTParser::escapeField(track.artist);
-        QString album = TXTParser::escapeField(track.album);
-        QString genre = TXTParser::escapeField(track.genre);
-        QString filePath = TXTParser::escapeField(track.filePath);
+        // Экранируем поля (используем префикс escaped для избежания shadowing)
+        const QString escapedTitle = TXTParser::escapeField(track.title);
+        const QString escapedArtist = TXTParser::escapeField(track.artist);
+        const QString escapedAlbum = TXTParser::escapeField(track.album);
+        const QString escapedGenre = TXTParser::escapeField(track.genre);
+        const QString escapedFilePath = TXTParser::escapeField(track.filePath);
 
         stream << track.id << TXTParser::FIELD_SEPARATOR
-               << title << TXTParser::FIELD_SEPARATOR
-               << artist << TXTParser::FIELD_SEPARATOR
-               << album << TXTParser::FIELD_SEPARATOR
+               << escapedTitle << TXTParser::FIELD_SEPARATOR
+               << escapedArtist << TXTParser::FIELD_SEPARATOR
+               << escapedAlbum << TXTParser::FIELD_SEPARATOR
                << track.year << TXTParser::FIELD_SEPARATOR
-               << genre << TXTParser::FIELD_SEPARATOR
+               << escapedGenre << TXTParser::FIELD_SEPARATOR
                << track.duration << TXTParser::FIELD_SEPARATOR
-               << filePath;
+               << escapedFilePath;
         return stream;
     }
     
