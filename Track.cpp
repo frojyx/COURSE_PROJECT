@@ -34,6 +34,7 @@ bool Track::matchesSearch(const QString& searchTerm) const {
 }
 
 // Перегрузка операторов сравнения
+// NOSONAR: Проект использует C++17, = default для операторов сравнения требует C++20
 bool Track::operator==(const Track& other) const {
     return id == other.id &&
            title == other.title &&
