@@ -101,7 +101,7 @@ QString MP3MetadataReader::readID3v2Tag(const QByteArray& data, const QByteArray
 
             QString result = processFrameEncoding(frameData, encoding);
             if (!result.isEmpty()) {
-                return result.trimmed();
+                    return result.trimmed();
             }
         }
 
@@ -137,41 +137,41 @@ int MP3MetadataReader::calculateMP3Duration(const QString& filePath) {
             continue;
         }
 
-        // Читаем заголовок MP3 фрейма
+            // Читаем заголовок MP3 фрейма
         // NOSONAR: std::byte is used for byte-oriented data, conversion to uint8_t needed for bit operations
         auto header2 = static_cast<std::byte>(buffer[i+1]);
         auto header3 = static_cast<std::byte>(buffer[i+2]);
 
-        // Проверяем версию MP3 (MPEG-1, MPEG-2)
+            // Проверяем версию MP3 (MPEG-1, MPEG-2)
         auto header2Val = std::to_integer<std::uint8_t>(header2); // NOSONAR: conversion needed for bitwise operations
         auto header3Val = std::to_integer<std::uint8_t>(header3); // NOSONAR: conversion needed for bitwise operations
         if (auto layer = (header2Val >> 1) & 0x03; layer != 1) { // NOSONAR: bitwise operations on uint8_t
             continue;
         }
 
-        // Извлекаем битрейт
+                // Извлекаем битрейт
         auto bitrateIndex = (header3Val >> 4) & 0x0F; // NOSONAR: bitwise operations on uint8_t
-        // Извлекаем частоту дискретизации
+                // Извлекаем частоту дискретизации
         auto sampleRateIndex = (header3Val >> 2) & 0x03; // NOSONAR: bitwise operations on uint8_t
 
-        // Битрейт для MPEG-1 Layer III (kbps)
+                // Битрейт для MPEG-1 Layer III (kbps)
         constexpr std::array<int, 16> bitrates = {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0};
-        if (bitrateIndex == 0 || bitrateIndex >= 15) {
-            continue;
-        }
-        int bitrate = bitrates[bitrateIndex] * 1000; // в битах в секунду
+                if (bitrateIndex == 0 || bitrateIndex >= 15) {
+                    continue;
+                }
+                int bitrate = bitrates[bitrateIndex] * 1000; // в битах в секунду
 
-        // Частота дискретизации для MPEG-1 (Hz)
+                // Частота дискретизации для MPEG-1 (Hz)
         constexpr std::array<int, 4> sampleRates = {44100, 48000, 32000, 0};
-        if (sampleRateIndex >= 3) {
-            continue;
-        }
-        int sampleRate = sampleRates[sampleRateIndex];
+                if (sampleRateIndex >= 3) {
+                    continue;
+                }
+                int sampleRate = sampleRates[sampleRateIndex];
 
-        if (bitrate > 0 && sampleRate > 0) {
-            // Длительность = (размер файла * 8) / битрейт
-            int duration = (fileSize * 8) / bitrate;
-            return duration;
+                if (bitrate > 0 && sampleRate > 0) {
+                    // Длительность = (размер файла * 8) / битрейт
+                    int duration = (fileSize * 8) / bitrate;
+                    return duration;
         }
     }
 
@@ -313,19 +313,19 @@ bool MP3MetadataReader::readMP3Metadata(const QString& filePath, QString& title,
 
         if (id3Title.isEmpty() && !id3v1Tags.title.isEmpty()) {
             id3Title = id3v1Tags.title;
-        }
+                }
         if (id3Artist.isEmpty() && !id3v1Tags.artist.isEmpty()) {
             id3Artist = id3v1Tags.artist;
-        }
+                }
         if (id3Album.isEmpty() && !id3v1Tags.album.isEmpty()) {
             id3Album = id3v1Tags.album;
-        }
+                }
         if (id3Year.isEmpty() && !id3v1Tags.year.isEmpty()) {
             id3Year = id3v1Tags.year;
         }
         if (id3Genre.isEmpty() && !id3v1Tags.genre.isEmpty()) {
             id3Genre = id3v1Tags.genre;
-        }
+                    }
     }
 
     // Заполняем поля

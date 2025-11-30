@@ -1,0 +1,452 @@
+@startuml course-work
+scale 1.2
+left to right direction
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontColor black
+
+skinparam ranksep 0.9
+skinparam nodesep 0.8
+skinparam linetype ortho
+
+hide empty members
+hide circle
+hide stereotype
+skinparam classAttributeIconSize 0
+skinparam classVisibilityIconSize 0
+
+skinparam class {
+    AttributeFontSize 9
+    FontSize 10
+    Padding 6
+    BackgroundColor white
+    BorderColor black
+    ArrowColor black
+    BorderThickness 1
+}
+skinparam defaultFontSize 10
+
+
+' Основные классы данных
+class Track {
+    -int id
+    -QString title
+    -QString artist
+    -QString album
+    -int year
+    -QString genre
+    -int duration
+    -QString filePath
+    +Track()
+    +Track(id, title, artist, album, year, genre, duration)
+    +Track(id, params: TrackParams)
+    +getId(): int
+    +getTitle(): QString
+    +getArtist(): QString
+    +getAlbum(): QString
+    +getYear(): int
+    +getGenre(): QString
+    +getDuration(): int
+    +getFormattedDuration(): QString
+    +getFilePath(): QString
+    +setId(newId: int)
+    +setTitle(newTitle: QString)
+    +setArtist(newArtist: QString)
+    +setAlbum(newAlbum: QString)
+    +setYear(newYear: int)
+    +setGenre(newGenre: QString)
+    +setDuration(newDuration: int)
+    +setFilePath(newFilePath: QString)
+    +matchesSearch(searchTerm: QString): bool
+    +operator==(other: Track): bool
+    +operator!=(other: Track): bool
+    +operator<(other: Track): bool
+    +operator>(other: Track): bool
+    +operator<=(other: Track): bool
+    +operator>=(other: Track): bool
+    +{friend} operator<<(stream: QTextStream, track: Track): QTextStream&
+    +{friend} operator>>(stream: QTextStream, track: Track&): QTextStream&
+}
+
+struct TrackParams {
+    +QString title
+    +QString artist
+    +QString album
+    +int year
+    +QString genre
+    +int duration
+    +QString filePath
+}
+
+struct TrackSearchParams {
+    +QString title
+    +QString artist
+    +QString album
+    +QString genre
+    +int minYear
+    +int maxYear
+    +int minDuration
+    +int maxDuration
+}
+
+struct TrackAddParams {
+    +QString title
+    +QString artist
+    +QString album
+    +int year
+    +QString genre
+    +int duration
+    +QString filePath
+}
+
+struct YandexTrack {
+    +QString id
+    +QString albumId
+    +QString title
+    +QString artist
+    +QString album
+    +int year
+    +QString genre
+    +int duration
+    +QString coverUrl
+}
+
+' Репозиторий и управление данными
+class TrackRepository {
+    -QList<Track> tracks
+    -int nextId
+    +TrackRepository()
+    +addTrack(track: Track)
+    +addTrack(title, artist, album, year, genre, duration)
+    +addTrack(title, artist, album, year, genre, duration, filePath)
+    +addTrackWithId(id: int, params: TrackParams)
+    +removeTrack(id: int): bool
+    +updateTrack(id: int, updatedTrack: Track): bool
+    +findTrackById(id: int): Track*
+    +findTrackById(id: int): const Track*
+    +findAllTracks(): QList<Track>
+    +getTrackCount(): int
+    +getNextId(): int
+    +updateNextId()
+    +setTracks(newTracks: QList<Track>)
+}
+
+class MusicCatalog {
+    -TrackRepository repository
+    -TrackSearcher searcher
+    -TrackSorter sorter
+    +MusicCatalog()
+    +addTrack(title, artist, album, year, genre, duration)
+    +addTrack(title, artist, album, year, genre, duration, filePath)
+    +addTrackWithId(id: int, params: TrackAddParams)
+    +removeTrack(id: int): bool
+    +updateTrack(id: int, updatedTrack: Track): bool
+    +findTrackById(id: int): Track*
+    +findTrackById(id: int): const Track*
+    +findAllTracks(): QList<Track>
+    +findTracksByTitle(title: QString): QList<Track>
+    +findTracksByArtist(artist: QString): QList<Track>
+    +findTracksByAlbum(album: QString): QList<Track>
+    +findTracksByGenre(genre: QString): QList<Track>
+    +findTracksByYearRange(startYear, endYear: int): QList<Track>
+    +searchTracks(searchTerm: QString): QList<Track>
+    +searchTracksWithFilters(params: TrackSearchParams): QList<Track>
+    +sortByTitle(ascending: bool)
+    +sortByArtist(ascending: bool)
+    +sortByYear(ascending: bool)
+    +sortByDuration(ascending: bool)
+    +getTrackCount(): int
+    +getNextId(): int
+    +updateNextId()
+}
+
+class TrackSearcher {
+    -const TrackRepository& repository
+    +TrackSearcher(repository: TrackRepository)
+    +searchTracks(searchTerm: QString): QList<Track>
+    +findTracksByTitle(title: QString): QList<Track>
+    +findTracksByArtist(artist: QString): QList<Track>
+    +findTracksByAlbum(album: QString): QList<Track>
+    +findTracksByGenre(genre: QString): QList<Track>
+    +findTracksByYearRange(startYear, endYear: int): QList<Track>
+    +searchTracksWithFilters(params: TrackSearchParams): QList<Track>
+}
+
+class TrackSorter {
+    -TrackRepository& repository
+    +TrackSorter(repository: TrackRepository)
+    +sortByTitle(ascending: bool)
+    +sortByArtist(ascending: bool)
+    +sortByYear(ascending: bool)
+    +sortByDuration(ascending: bool)
+}
+
+' Работа с файлами
+class TXTParser {
+    +{static} FIELD_SEPARATOR: QString
+    +{static} escapeField(field: QString): QString
+    +{static} parseLine(line: QString): QStringList
+    +{static} unescapeField(field: QString): QString
+}
+
+class TXTWriter {
+    +{static} saveToTXT(catalog: MusicCatalog, filename: QString): bool
+}
+
+class TXTReader {
+    +{static} loadFromTXT(catalog: MusicCatalog&, filename: QString): bool
+}
+
+class FileManager {
+    +{static} saveToTXT(catalog: MusicCatalog, filename: QString): bool
+    +{static} loadFromTXT(catalog: MusicCatalog&, filename: QString): bool
+}
+
+' Работа с MP3
+class MP3FileManager {
+    -MP3FileFinder fileFinder
+    +MP3FileManager(musicPath: QString)
+    +getMP3Files(): QList<QFileInfo>
+    +{static} parseFileName(fileName: QString, title: QString&, artist: QString&, ...): bool
+    +{static} readMP3Metadata(filePath: QString, title: QString&, artist: QString&, ...): bool
+    +{static} createNewFileName(id: int, title, artist, album: QString, year, genre, duration: int): QString
+    +{static} renameFile(oldPath: QString, newFileName: QString): bool
+    +{static} openMP3File(filePath: QString): bool
+    +findFileByTrack(id: int, title, artist, album: QString, year, genre, duration: int): QString
+    +getMusicPath(): QString
+}
+
+class MP3FileFinder {
+    -QString musicPath
+    +MP3FileFinder(musicPath: QString)
+    +getMP3Files(): QList<QFileInfo>
+    +findFileByTrack(id: int, title, artist, album: QString, year, genre, duration: int): QString
+    +getMusicPath(): QString
+}
+
+class MP3MetadataReader {
+    +{static} readMP3Metadata(filePath: QString, title: QString&, artist: QString&, ...): bool
+    -{static} readID3v2Tag(data: QByteArray, frameId: QByteArray): QString
+    -{static} calculateMP3Duration(filePath: QString): int
+}
+
+class MP3FileNameParser {
+    +{static} parseFileName(fileName: QString, title: QString&, artist: QString&, ...): bool
+}
+
+class MP3FileOperations {
+    +{static} createNewFileName(id: int, title, artist, album: QString, year, genre, duration: int): QString
+    +{static} renameFile(oldPath: QString, newFileName: QString): bool
+    +{static} openMP3File(filePath: QString): bool
+}
+
+' Интеграция с Yandex Music
+class YandexMusicAPI {
+    -QNetworkAccessManager* networkManager
+    +YandexMusicAPI(parent: QObject*)
+    +~YandexMusicAPI()
+    +searchTracks(query: QString, page: int, limit: int)
+    +getTrackInfo(trackId: QString)
+    +{signal} tracksFound(tracks: QList<YandexTrack>)
+    +{signal} trackInfoReceived(track: YandexTrack)
+    +{signal} errorOccurred(errorMessage: QString)
+    -onSearchFinished(reply: QNetworkReply*)
+    -onTrackInfoFinished(reply: QNetworkReply*)
+    -parseSearchResults(json: QJsonDocument): QList<YandexTrack>
+    -parseTrackInfo(json: QJsonDocument): YandexTrack
+    -extractArtist(trackObj: QJsonObject): QString
+    -extractAlbum(trackObj: QJsonObject): QString
+    -extractYear(trackObj: QJsonObject): int
+    -extractGenre(trackObj: QJsonObject): QString
+    -extractDuration(trackObj: QJsonObject): int
+}
+
+class YandexMusicIntegrator {
+    -YandexMusicAPI* api
+    -MusicCatalog* catalog
+    +YandexMusicIntegrator(catalog: MusicCatalog*, parent: QObject*)
+    +searchAndImportTracks(query: QString)
+    +importTrack(track: YandexTrack)
+    +{signal} tracksFound(tracks: QList<YandexTrack>)
+    +{signal} trackImported(trackTitle: QString)
+    +{signal} importFinished(importedCount: int)
+    +{signal} errorOccurred(errorMessage: QString)
+    -onTracksFound(tracks: QList<YandexTrack>)
+    -onErrorOccurred(errorMessage: QString)
+    -autoSave()
+}
+
+' Исключения
+class MusicCatalogException {
+    -QString errorMessage
+    +MusicCatalogException(message: QString)
+    +~MusicCatalogException()
+    +what(): const char*
+    +getMessage(): QString
+}
+
+class TrackException {
+    -int trackId
+    +TrackException(message: QString)
+    +TrackException(trackId: int, operation: QString)
+    +~TrackException()
+    +getTrackId(): int
+}
+
+class FileException {
+    +FileException(message: QString)
+    +FileException(filename: QString, operation: QString)
+    +~FileException()
+}
+
+class ValidationException {
+    -QString fieldName
+    +ValidationException(message: QString)
+    +ValidationException(fieldName: QString, reason: QString)
+    +~ValidationException()
+    +getFieldName(): QString
+}
+
+class ParseException {
+    -int lineNumber
+    +ParseException(message: QString)
+    +ParseException(data: QString, expectedFormat: QString)
+    +ParseException(lineNumber: int, error: QString)
+    +~ParseException()
+    +getLineNumber(): int
+}
+
+' Вспомогательные классы
+class GenreManager {
+    +{static} getGenreList(): QStringList
+}
+
+class ReportGenerator {
+    +{static} generateReport(catalog: MusicCatalog): QString
+}
+
+class Parser {
+    +{abstract} ~Parser()
+    +{abstract} escapeField(field: QString): QString
+    +{abstract} parseLine(line: QString): QStringList
+    +{abstract} unescapeField(field: QString): QString
+}
+
+' GUI
+class MainWindow {
+    -QStackedWidget* stackedWidget
+    -MusicCatalog catalog
+    -int currentTrackId
+    -MP3FileManager mp3Manager
+    -SearchUI searchUI
+    -AddTrackUI addTrackUI
+    -EditTrackUI editTrackUI
+    -YandexMusicUI yandexUI
+    +MainWindow(parent: QWidget*)
+    +showMainCatalog()
+    +showAddTrack()
+    +addNewTrack()
+    +searchTracks()
+    +onMP3FileSelected()
+    +openTrackFile(row: int, column: int)
+    +autoSaveCatalog()
+    +autoLoadCatalog()
+    +resetSearch()
+    +playTrackById(trackId: int)
+    +editTrackById(trackId: int)
+    +deleteTrackById(trackId: int)
+    +searchYandexMusic()
+    +onYandexTracksFound(tracks: QList<YandexTrack>)
+    +onYandexTrackImported(trackTitle: QString)
+    +onYandexError(errorMessage: QString)
+    +importSelectedYandexTracks()
+    -createMainCatalogScreen(): QWidget*
+    -createAddTrackScreen(): QWidget*
+    -createEditTrackScreen(): QWidget*
+    -updateTrackTable()
+    -updateTrackTable(tracksToDisplay: QList<Track>)
+    -clearAddTrackForm()
+    -populateTrackTable(tracks: QList<Track>)
+    -fillFormFromParsedFileName(...)
+    -fillFormFromMP3Metadata(fileName: QString)
+}
+
+' Связи
+Track "1" *-- "0..*" TrackRepository
+TrackParams ..> Track
+TrackSearchParams ..> TrackSearcher
+TrackAddParams ..> MusicCatalog
+YandexTrack ..> YandexMusicIntegrator
+
+MusicCatalog *-- TrackRepository
+MusicCatalog *-- TrackSearcher
+MusicCatalog *-- TrackSorter
+
+TrackSearcher --> TrackRepository
+TrackSorter --> TrackRepository
+
+MusicCatalog ..> Track
+FileManager ..> MusicCatalog
+FileManager ..> TXTWriter
+FileManager ..> TXTReader
+
+TXTWriter ..> TXTParser
+TXTReader ..> TXTParser
+Track ..> TXTParser
+
+MP3FileManager *-- MP3FileFinder
+MP3FileManager ..> MP3MetadataReader
+MP3FileManager ..> MP3FileNameParser
+MP3FileManager ..> MP3FileOperations
+
+YandexMusicIntegrator *-- YandexMusicAPI
+YandexMusicIntegrator --> MusicCatalog
+YandexMusicIntegrator --> FileManager
+
+MainWindow --> MusicCatalog
+MainWindow --> MP3FileManager
+MainWindow --> YandexMusicIntegrator
+MainWindow --> FileManager
+
+MusicCatalogException <|-- TrackException
+MusicCatalogException <|-- FileException
+MusicCatalogException <|-- ValidationException
+MusicCatalogException <|-- ParseException
+std::exception <|-- MusicCatalogException
+
+QObject <|-- YandexMusicAPI
+QObject <|-- YandexMusicIntegrator
+QMainWindow <|-- MainWindow
+
+Parser <|.. TXTParser
+
+note right of Track
+    Перегрузка операторов:
+    ==, !=, <, >, <=, >=
+    <<, >>
+end note
+
+note right of MusicCatalog
+    Фасад для работы
+    с каталогом треков
+end note
+
+note right of TrackRepository
+    Паттерн Repository
+    для хранения данных
+end note
+
+note right of TrackSearcher
+    Паттерн Strategy
+    для поиска
+end note
+
+note right of TrackSorter
+    Паттерн Strategy
+    для сортировки
+end note
+
+@enduml
+

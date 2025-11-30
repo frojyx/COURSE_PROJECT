@@ -33,6 +33,12 @@ bool Track::matchesSearch(const QString& searchTerm) const {
            genre.toLower().contains(lowerSearch);
 }
 
+bool Track::isFromYandexMusic() const {
+    return !filePath.isEmpty() && 
+           (filePath.startsWith("https://music.yandex.ru/") || 
+            filePath.startsWith("http://music.yandex.ru/"));
+}
+
 // Перегрузка операторов сравнения
 bool Track::operator==(const Track& other) const { // NOSONAR: Проект использует C++17, = default требует C++20
     return id == other.id &&

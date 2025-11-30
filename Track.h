@@ -46,6 +46,7 @@ public:
 
     // Вспомогательные методы
     bool matchesSearch(const QString& searchTerm) const;
+    bool isFromYandexMusic() const;
 
     // Перегрузка операторов сравнения
     // NOSONAR: Проект использует C++17, автоматическая генерация operator!= и operator<=> требуют C++20

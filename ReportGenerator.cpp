@@ -23,3 +23,4 @@ QString ReportGenerator::generateReport(const MusicCatalog& catalog) {
 
 
 
+

@@ -134,7 +134,9 @@ void MainWindow::searchTracks() {
         resultIds.insert(t.getId());
     }
 
-    QColor highlightColor(255, 255, 180); // мягкая желтая подсветка
+    QColor highlightColor(255, 255, 180); // мягкая желтая подсветка для поиска
+    QColor yandexMusicColor(230, 240, 255); // светло-голубой для Яндекс Музыки
+    QColor combinedColor(242, 247, 218); // комбинация желтого и голубого для найденных треков из Яндекс Музыки
 
     for (int row = 0; row < searchUI.trackTable->rowCount(); ++row) {
         const QTableWidgetItem *titleItem = searchUI.trackTable->item(row, 0);
@@ -142,11 +144,49 @@ void MainWindow::searchTracks() {
         int id = titleItem->data(Qt::UserRole).toInt();
         bool isMatch = resultIds.contains(id);
 
-        // Применяем фон ко всем ячейкам строки, кроме виджета действий
+        // Проверяем, является ли трек из Яндекс Музыки
+        Track* track = catalog.findTrackById(id);
+        bool isFromYandex = track && track->isFromYandexMusic();
+
+        // Определяем цвет фона в зависимости от статуса
+        QColor backgroundColor;
+        if (isMatch && isFromYandex) {
+            // Найден и из Яндекс Музыки - комбинированный цвет
+            backgroundColor = combinedColor;
+        } else if (isMatch) {
+            // Найден, но не из Яндекс Музыки - желтый
+            backgroundColor = highlightColor;
+        } else if (isFromYandex) {
+            // Не найден, но из Яндекс Музыки - голубой
+            backgroundColor = yandexMusicColor;
+        } else {
+            // Не найден и не из Яндекс Музыки - без фона (прозрачный)
+            backgroundColor = QColor();
+        }
+
+        // Применяем фон ко всем ячейкам строки
         for (int col = 0; col < 6; ++col) {
             QTableWidgetItem *cell = searchUI.trackTable->item(row, col);
             if (!cell) continue;
-            cell->setBackground(isMatch ? QBrush(highlightColor) : QBrush());
+            if (backgroundColor.isValid()) {
+                cell->setBackground(QBrush(backgroundColor));
+            } else {
+                cell->setBackground(QBrush());
+            }
+        }
+
+        // Применяем фон к виджету с кнопками действий
+        QWidget *actionWidget = searchUI.trackTable->cellWidget(row, 6);
+        if (actionWidget) {
+            if (backgroundColor.isValid()) {
+                QString colorStyle = QString("background-color: rgb(%1, %2, %3);")
+                                       .arg(backgroundColor.red())
+                                       .arg(backgroundColor.green())
+                                       .arg(backgroundColor.blue());
+                actionWidget->setStyleSheet(colorStyle);
+            } else {
+                actionWidget->setStyleSheet("");
+            }
         }
     }
 
@@ -402,19 +442,40 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
 
     searchUI.trackTable->setRowCount(tracks.size());
 
+    // Цвет фона для треков из Яндекс Музыки (светло-голубой)
+    QColor yandexMusicColor(230, 240, 255);
+
     for (int i = 0; i < tracks.size(); ++i) {
         const Track& track = tracks[i];
 
+        // Проверяем, является ли трек загруженным из Яндекс Музыки
+        bool isFromYandex = track.isFromYandexMusic();
+
+        // Формируем текст названия с иконкой для треков из Яндекс Музыки
+        QString titleText = track.getTitle();
+        if (isFromYandex) {
+            titleText = "🎵 " + titleText;
+        }
+
         // Сохраняем trackId в данных первого столбца (название)
-        auto *titleItem = new QTableWidgetItem(track.getTitle());
+        auto *titleItem = new QTableWidgetItem(titleText);
         titleItem->setData(Qt::UserRole, track.getId());
         searchUI.trackTable->setItem(i, 0, titleItem);
 
-        searchUI.trackTable->setItem(i, 1, new QTableWidgetItem(track.getArtist()));
-        searchUI.trackTable->setItem(i, 2, new QTableWidgetItem(track.getAlbum()));
-        searchUI.trackTable->setItem(i, 3, new QTableWidgetItem(QString::number(track.getYear())));
-        searchUI.trackTable->setItem(i, 4, new QTableWidgetItem(track.getGenre()));
-        searchUI.trackTable->setItem(i, 5, new QTableWidgetItem(track.getFormattedDuration()));
+        auto *artistItem = new QTableWidgetItem(track.getArtist());
+        searchUI.trackTable->setItem(i, 1, artistItem);
+
+        auto *albumItem = new QTableWidgetItem(track.getAlbum());
+        searchUI.trackTable->setItem(i, 2, albumItem);
+
+        auto *yearItem = new QTableWidgetItem(QString::number(track.getYear()));
+        searchUI.trackTable->setItem(i, 3, yearItem);
+
+        auto *genreItem = new QTableWidgetItem(track.getGenre());
+        searchUI.trackTable->setItem(i, 4, genreItem);
+
+        auto *durationItem = new QTableWidgetItem(track.getFormattedDuration());
+        searchUI.trackTable->setItem(i, 5, durationItem);
 
         // Создаем виджет с кнопками для столбца действий
         auto *actionWidget = new QWidget();
@@ -445,6 +506,23 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
 
         actionWidget->setLayout(actionLayout);
         searchUI.trackTable->setCellWidget(i, 6, actionWidget);
+
+        // Подсвечиваем всю строку для треков из Яндекс Музыки (включая столбец действий)
+        if (isFromYandex) {
+            // Подсвечиваем все ячейки со столбцами данных
+            for (int col = 0; col < 6; ++col) {
+                QTableWidgetItem *cell = searchUI.trackTable->item(i, col);
+                if (cell) {
+                    cell->setBackground(QBrush(yandexMusicColor));
+                }
+            }
+            // Подсвечиваем виджет с кнопками действий
+            QString colorStyle = QString("background-color: rgb(%1, %2, %3);")
+                                   .arg(yandexMusicColor.red())
+                                   .arg(yandexMusicColor.green())
+                                   .arg(yandexMusicColor.blue());
+            actionWidget->setStyleSheet(colorStyle);
+        }
 
         // Сохраняем trackId для использования в лямбдах (чтобы избежать проблем при сортировке)
         int trackId = track.getId();
