@@ -35,8 +35,8 @@ bool Track::matchesSearch(const QString& searchTerm) const {
 
 bool Track::isFromYandexMusic() const {
     return !filePath.isEmpty() && 
-           (filePath.startsWith("https://music.yandex.ru/") || 
-            filePath.startsWith("http://music.yandex.ru/"));
+           (filePath.startsWith("https://music.yandex.ru/") ||
+            filePath.startsWith("https://music.yandex.ru/"));
 }
 
 // Перегрузка операторов сравнения
