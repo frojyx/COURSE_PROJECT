@@ -15,7 +15,7 @@
 #include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), tableHighlighter(nullptr)
 {
     setWindowTitle("Музыкальный каталог");
     setMinimumSize(1000, 700);
@@ -42,6 +42,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Показываем главный экран
     showMainCatalog();
+}
+
+MainWindow::~MainWindow() {
+    delete tableHighlighter;
 }
 
 void MainWindow::showMainCatalog() {
@@ -135,89 +139,15 @@ void MainWindow::searchTracks() {
     }
 
     // Применяем подсветку поиска
-    applySearchHighlighting(resultIds);
+    if (tableHighlighter) {
+        tableHighlighter->applySearchHighlighting(resultIds);
+    }
 
     if (results.isEmpty()) {
         QMessageBox::information(this, "Поиск", "Треки не найдены");
     }
 }
 
-// Вспомогательные методы для подсветки строк в таблице
-void MainWindow::highlightTableRow(int row, const QColor& color) {
-    // Подсвечиваем все ячейки со столбцами данных
-    for (int col = 0; col < 6; ++col) {
-        QTableWidgetItem *cell = searchUI.trackTable->item(row, col);
-        if (cell) {
-            if (color.isValid()) {
-                cell->setBackground(QBrush(color));
-            } else {
-                cell->setBackground(QBrush());
-            }
-        }
-    }
-    
-    // Подсвечиваем виджет с кнопками действий
-    QWidget *actionWidget = searchUI.trackTable->cellWidget(row, 6);
-    if (actionWidget) {
-        if (color.isValid()) {
-            QString colorStyle = QString("background-color: rgb(%1, %2, %3);")
-                                   .arg(color.red())
-                                   .arg(color.green())
-                                   .arg(color.blue());
-            actionWidget->setStyleSheet(colorStyle);
-        } else {
-            actionWidget->setStyleSheet("");
-        }
-    }
-}
-
-void MainWindow::applySearchHighlighting(const QSet<int>& resultIds) {
-    QColor highlightColor(255, 255, 180); // мягкая желтая подсветка для поиска
-    QColor yandexMusicColor(230, 240, 255); // светло-голубой для Яндекс Музыки
-    QColor combinedColor(242, 247, 218); // комбинация желтого и голубого для найденных треков из Яндекс Музыки
-
-    for (int row = 0; row < searchUI.trackTable->rowCount(); ++row) {
-        const QTableWidgetItem *titleItem = searchUI.trackTable->item(row, 0);
-        if (!titleItem) continue;
-        int id = titleItem->data(Qt::UserRole).toInt();
-        bool isMatch = resultIds.contains(id);
-
-        // Проверяем, является ли трек из Яндекс Музыки
-        const Track* track = catalog.findTrackById(id);
-        bool isFromYandex = track && track->isFromYandexMusic();
-
-        // Определяем цвет фона в зависимости от статуса
-        QColor backgroundColor;
-        if (isMatch && isFromYandex) {
-            backgroundColor = combinedColor;
-        } else if (isMatch) {
-            backgroundColor = highlightColor;
-        } else if (isFromYandex) {
-            backgroundColor = yandexMusicColor;
-        } else {
-            backgroundColor = QColor(); // прозрачный
-        }
-
-        highlightTableRow(row, backgroundColor);
-    }
-}
-
-void MainWindow::highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color) {
-    // Подсвечиваем все ячейки со столбцами данных
-    for (int col = 0; col < 6; ++col) {
-        QTableWidgetItem *cell = searchUI.trackTable->item(row, col);
-        if (cell) {
-            cell->setBackground(QBrush(color));
-        }
-    }
-    
-    // Подсвечиваем виджет с кнопками действий
-    QString colorStyle = QString("background-color: rgb(%1, %2, %3);")
-                           .arg(color.red())
-                           .arg(color.green())
-                           .arg(color.blue());
-    actionWidget->setStyleSheet(colorStyle);
-}
 
 
 void MainWindow::autoSaveCatalog() const {
@@ -532,8 +462,8 @@ void MainWindow::populateTrackTable(const QList<Track>& tracks) {
         searchUI.trackTable->setCellWidget(i, 6, actionWidget);
 
         // Подсвечиваем всю строку для треков из Яндекс Музыки (включая столбец действий)
-        if (isFromYandex) {
-            highlightYandexMusicRow(i, actionWidget, yandexMusicColor);
+        if (isFromYandex && tableHighlighter) {
+            tableHighlighter->highlightYandexMusicRow(i, actionWidget, yandexMusicColor);
         }
 
         // Сохраняем trackId для использования в лямбдах (чтобы избежать проблем при сортировке)
@@ -605,6 +535,9 @@ QWidget* MainWindow::createMainCatalogScreen() {
     searchUI.trackTable->horizontalHeader()->setSortIndicatorShown(true);
     searchUI.trackTable->horizontalHeader()->setSectionsClickable(true);
     searchUI.trackTable->horizontalHeader()->setSortIndicator(0, Qt::AscendingOrder);
+
+    // Инициализируем подсветитель таблицы после создания таблицы
+    tableHighlighter = new TrackTableHighlighter(searchUI.trackTable, &catalog);
 
     // Панель управления
     auto *controlLayout = new QHBoxLayout;

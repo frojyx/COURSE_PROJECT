@@ -25,6 +25,7 @@
 #include "YandexMusicAPI.h"
 #include "YandexMusicIntegrator.h"
 #include "TrackSearchParams.h"
+#include "TrackTableHighlighter.h"
 #include <QDir>
 #include <QDialog>
 #include <QListWidget>
@@ -36,6 +37,7 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
 
 private slots:
     void showMainCatalog();
@@ -62,6 +64,7 @@ private:
     MusicCatalog catalog;
     int currentTrackId = -1;
     MP3FileManager mp3Manager;
+    TrackTableHighlighter* tableHighlighter;
 
     // Экраны
     QWidget *createMainCatalogScreen();
@@ -126,11 +129,6 @@ private:
     // Вспомогательные методы для работы с жанрами
     QStringList getGenreList() const;
     void populateGenreComboBox(QComboBox *comboBox) const;
-
-    // Вспомогательные методы для подсветки строк в таблице
-    void highlightTableRow(int row, const QColor& color);
-    void applySearchHighlighting(const QSet<int>& resultIds);
-    void highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color);
 };
 
 #endif // MAINWINDOW_H

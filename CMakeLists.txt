@@ -48,6 +48,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ReportGenerator.h ReportGenerator.cpp
         YandexMusicAPI.h YandexMusicAPI.cpp
         YandexMusicIntegrator.h YandexMusicIntegrator.cpp
+        TrackTableHighlighter.h TrackTableHighlighter.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET NewMusicCatalog APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
