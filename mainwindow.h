@@ -126,6 +126,11 @@ private:
     // Вспомогательные методы для работы с жанрами
     QStringList getGenreList() const;
     void populateGenreComboBox(QComboBox *comboBox) const;
+
+    // Вспомогательные методы для подсветки строк в таблице
+    void highlightTableRow(int row, const QColor& color);
+    void applySearchHighlighting(const QSet<int>& resultIds);
+    void highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color);
 };
 
 #endif // MAINWINDOW_H
