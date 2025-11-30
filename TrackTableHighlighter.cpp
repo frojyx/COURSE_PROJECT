@@ -10,7 +10,7 @@ TrackTableHighlighter::TrackTableHighlighter(QTableWidget* table, MusicCatalog* 
 {
 }
 
-void TrackTableHighlighter::highlightRow(int row, const QColor& color) {
+void TrackTableHighlighter::highlightRow(int row, const QColor& color) const {
     // Подсвечиваем все ячейки со столбцами данных
     for (int col = 0; col < 6; ++col) {
         QTableWidgetItem *cell = table->item(row, col);
@@ -38,7 +38,7 @@ void TrackTableHighlighter::highlightRow(int row, const QColor& color) {
     }
 }
 
-void TrackTableHighlighter::applySearchHighlighting(const QSet<int>& resultIds) {
+void TrackTableHighlighter::applySearchHighlighting(const QSet<int>& resultIds) const {
     QColor highlightColor(255, 255, 180); // мягкая желтая подсветка для поиска
     QColor yandexMusicColor(230, 240, 255); // светло-голубой для Яндекс Музыки
     QColor combinedColor(242, 247, 218); // комбинация желтого и голубого для найденных треков из Яндекс Музыки
@@ -69,7 +69,7 @@ void TrackTableHighlighter::applySearchHighlighting(const QSet<int>& resultIds) 
     }
 }
 
-void TrackTableHighlighter::highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color) {
+void TrackTableHighlighter::highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color) const {
     // Подсвечиваем все ячейки со столбцами данных
     for (int col = 0; col < 6; ++col) {
         QTableWidgetItem *cell = table->item(row, col);

@@ -37,7 +37,7 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
 
 private slots:
     void showMainCatalog();
@@ -64,7 +64,7 @@ private:
     MusicCatalog catalog;
     int currentTrackId = -1;
     MP3FileManager mp3Manager;
-    TrackTableHighlighter* tableHighlighter;
+    TrackTableHighlighter* tableHighlighter = nullptr;
 
     // Экраны
     QWidget *createMainCatalogScreen();

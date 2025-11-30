@@ -15,7 +15,7 @@
 #include <QUrl>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), tableHighlighter(nullptr)
+    : QMainWindow(parent)
 {
     setWindowTitle("Музыкальный каталог");
     setMinimumSize(1000, 700);

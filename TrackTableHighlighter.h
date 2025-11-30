@@ -13,13 +13,13 @@ public:
     explicit TrackTableHighlighter(QTableWidget* table, MusicCatalog* catalog);
 
     // Подсветка строки таблицы
-    void highlightRow(int row, const QColor& color);
+    void highlightRow(int row, const QColor& color) const;
     
     // Применение подсветки поиска
-    void applySearchHighlighting(const QSet<int>& resultIds);
+    void applySearchHighlighting(const QSet<int>& resultIds) const;
     
     // Подсветка строки трека из Яндекс Музыки
-    void highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color);
+    void highlightYandexMusicRow(int row, QWidget* actionWidget, const QColor& color) const;
 
 private:
     QTableWidget* table;
