@@ -260,8 +260,8 @@ void MainWindow::openTrackFile(int row, int column) {
     QString filePath = track->getFilePath();
     
     // Проверяем, является ли путь ссылкой на Яндекс Музыку
-    if (!filePath.isEmpty() && (filePath.startsWith("https://music.yandex.ru/") || 
-                                filePath.startsWith("http://music.yandex.ru/"))) {
+    if (!filePath.isEmpty() && (filePath.startsWith("https://music.yandex.ru/") ||
+                                filePath.startsWith("https://music.yandex.ru/"))) {
         // Открываем ссылку в браузере
         QDesktopServices::openUrl(QUrl(filePath));
         return;
@@ -300,7 +300,7 @@ void MainWindow::playTrackById(int trackId) {
     
     // Проверяем, является ли путь ссылкой на Яндекс Музыку
     if (!filePath.isEmpty() && (filePath.startsWith("https://music.yandex.ru/") || 
-                                filePath.startsWith("http://music.yandex.ru/"))) {
+                                filePath.startsWith("https://music.yandex.ru/"))) {
         // Открываем ссылку в браузере
         QDesktopServices::openUrl(QUrl(filePath));
         return;
@@ -325,6 +325,7 @@ void MainWindow::playTrackById(int trackId) {
         }
     }
 }
+
 
 void MainWindow::editTrackById(int trackId) {
     const Track* track = catalog.findTrackById(trackId);
