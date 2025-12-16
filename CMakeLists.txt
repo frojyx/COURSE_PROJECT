@@ -14,8 +14,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
 
 set(PROJECT_SOURCES
         src/main.cpp
-        src/mainwindow.cpp
-        includes/mainwindow.h
+        src/ui/mainwindow.cpp
+        includes/ui/mainwindow.h
         mainwindow.ui
 )
 
@@ -25,34 +25,40 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(NewMusicCatalog
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        includes/FileManager.h
-        includes/MP3FileManager.h src/MP3FileManager.cpp
-        includes/MusicCatalog.h src/MusicCatalog.cpp
-        includes/Track.h src/Track.cpp
-        includes/SearchResultsWindow.h src/SearchResultsWindow.cpp
-        includes/TrackRepository.h src/TrackRepository.cpp
-        includes/TrackSearcher.h src/TrackSearcher.cpp
-        includes/TrackSearchParams.h
-        includes/TrackSorter.h src/TrackSorter.cpp
-        includes/MP3MetadataReader.h src/MP3MetadataReader.cpp
-        includes/MP3FileNameParser.h src/MP3FileNameParser.cpp
-        includes/MP3FileOperations.h src/MP3FileOperations.cpp
-        includes/MP3FileFinder.h src/MP3FileFinder.cpp
-        includes/TXTParser.h src/TXTParser.cpp
-        includes/TXTWriter.h src/TXTWriter.cpp
-        includes/TXTReader.h src/TXTReader.cpp
-        includes/MusicCatalogException.h src/MusicCatalogException.cpp
-        includes/FileException.h src/FileException.cpp
-        includes/TrackException.h src/TrackException.cpp
-        includes/ValidationException.h src/ValidationException.cpp
-        includes/ParseException.h src/ParseException.cpp
-        includes/GenreManager.h src/GenreManager.cpp
-        includes/ReportGenerator.h src/ReportGenerator.cpp
-        includes/YandexMusicAPI.h src/YandexMusicAPI.cpp
-        includes/YandexMusicIntegrator.h src/YandexMusicIntegrator.cpp
-        includes/TrackTableHighlighter.h src/TrackTableHighlighter.cpp
-        includes/TemplateUtils.h
-        includes/Parser.h
+        # Core
+        includes/core/Track.h src/core/Track.cpp
+        includes/core/TrackRepository.h src/core/TrackRepository.cpp
+        includes/core/MusicCatalog.h src/core/MusicCatalog.cpp
+        includes/core/TrackSearcher.h src/core/TrackSearcher.cpp
+        includes/core/TrackSearchParams.h
+        includes/core/TrackSorter.h src/core/TrackSorter.cpp
+        includes/core/GenreManager.h src/core/GenreManager.cpp
+        # Exceptions
+        includes/exceptions/MusicCatalogException.h src/exceptions/MusicCatalogException.cpp
+        includes/exceptions/TrackException.h src/exceptions/TrackException.cpp
+        includes/exceptions/FileException.h src/exceptions/FileException.cpp
+        includes/exceptions/ValidationException.h src/exceptions/ValidationException.cpp
+        includes/exceptions/ParseException.h src/exceptions/ParseException.cpp
+        # File Operations
+        includes/file_operations/FileManager.h
+        includes/file_operations/TXTReader.h src/file_operations/TXTReader.cpp
+        includes/file_operations/TXTWriter.h src/file_operations/TXTWriter.cpp
+        includes/file_operations/TXTParser.h src/file_operations/TXTParser.cpp
+        includes/file_operations/Parser.h
+        includes/file_operations/TemplateUtils.h
+        # MP3
+        includes/mp3/MP3FileManager.h src/mp3/MP3FileManager.cpp
+        includes/mp3/MP3MetadataReader.h src/mp3/MP3MetadataReader.cpp
+        includes/mp3/MP3FileNameParser.h src/mp3/MP3FileNameParser.cpp
+        includes/mp3/MP3FileOperations.h src/mp3/MP3FileOperations.cpp
+        includes/mp3/MP3FileFinder.h src/mp3/MP3FileFinder.cpp
+        # Integration
+        includes/integration/YandexMusicAPI.h src/integration/YandexMusicAPI.cpp
+        includes/integration/YandexMusicIntegrator.h src/integration/YandexMusicIntegrator.cpp
+        # UI
+        includes/ui/SearchResultsWindow.h src/ui/SearchResultsWindow.cpp
+        includes/ui/TrackTableHighlighter.h src/ui/TrackTableHighlighter.cpp
+        includes/ui/ReportGenerator.h src/ui/ReportGenerator.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET NewMusicCatalog APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
